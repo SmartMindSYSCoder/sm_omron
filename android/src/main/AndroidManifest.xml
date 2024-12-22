@@ -1,0 +1,33 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+
+
+  package="com.sm.sm_omron"
+    >
+
+
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+
+<!--  RECORD_AUDIO permission needed for temperature -->
+    <uses-permission
+        android:name="android.permission.RECORD_AUDIO"/>
+<!--    <application-->
+<!--        android:label="SMOmron"-->
+
+<!--        tools:replace="android:label"-->
+<!--        android:requestLegacyExternalStorage="true"-->
+<!--        android:usesCleartextTraffic="true"-->
+<!--        tools:replace="android:label"-->
+
+<!--        ></application>-->
+
+
+</manifest>
