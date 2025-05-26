@@ -156,7 +156,7 @@ public class WeightScale {
             // Reads all data from device.
             peripheralConfig.enableAllDataRead = isHistoricDataRead;
         }
-
+Log.d("enableAllDataRead","*************************  enableAllDataRead "+peripheralConfig.enableAllDataRead);
         // Pass the last sequence number of reading  tracked by app - "SequenceKey" for each vital data
 //        HashMap<Integer, Integer> sequenceNumbersForTransfer = new HashMap<>();
 //        sequenceNumbersForTransfer.put(1, 20);
@@ -183,7 +183,10 @@ public class WeightScale {
 
                 if ( peripheral != null) {
 
-                    HashMap<String, String> deviceInformation = peripheral.getDeviceInformation();
+//                    HashMap<String, String> deviceInformation = peripheral.getDeviceInformation();
+                    HashMap<String, String> deviceInformation = (HashMap<String, String>) peripheral.getDeviceInformation();
+
+
                     Log.d(TAG, "Device Information : " + deviceInformation);
 
                     ArrayList<HashMap> allSettings = (ArrayList<HashMap>) peripheral.getDeviceSettings();
@@ -211,7 +214,7 @@ public class WeightScale {
                         HashMap<String, Object> vitalData = (HashMap<String, Object>) output;
 
                         if (vitalData != null) {
-                            uploadData(vitalData, peripheral, true);
+                            uploadData(vitalData, peripheral, false);
                         }
                     }
 
@@ -228,7 +231,8 @@ public class WeightScale {
 
     private void uploadData(HashMap<String, Object> vitalData, OmronPeripheral peripheral, boolean isWait) {
 
-        HashMap<String, String> deviceInfo = peripheral.getDeviceInformation();
+//        HashMap<String, String> deviceInfo = peripheral.getDeviceInformation();
+        HashMap<String, String> deviceInfo = (HashMap<String, String>) peripheral.getDeviceInformation();
 
         // Weight Data
 //        ArrayList<HashMap<String, Object>> weightData = (ArrayList<HashMap<String, Object>>) vitalData.get(OmronConstants.OMRONVitalDataWeightKey);

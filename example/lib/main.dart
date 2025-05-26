@@ -122,6 +122,46 @@ class _MyAppState extends State<MyApp> {
 
                           const SizedBox(height: 10,),
 
+                          TextButton(
+
+                              onPressed: ()async{
+
+
+
+                                var omronData=await     _smOmronPlugin.readWeight(  savedDevices.first);
+
+                                if(omronData !=null) {
+
+                                  parseData(omronData);
+                                }
+
+                                else {
+
+
+                                  print("**************    No Data");
+
+                                }
+
+
+
+
+                              },
+
+
+
+                              child: Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 30,vertical: 5),
+                                  margin: EdgeInsets.symmetric(vertical: 20),
+                                  decoration: BoxDecoration(
+                                      color: Colors.deepPurple,
+                                      borderRadius: BorderRadius.circular(10)
+                                  ),
+
+                                  child: const Text("Read Weight",style: TextStyle(color: Colors.white),))),
+
+
+                          const SizedBox(height: 10,),
+
 
 
 
@@ -366,6 +406,7 @@ class _MyAppState extends State<MyApp> {
 
                  title: Text(model.modelName ?? ""),
                  subtitle: Text(model.identifier ?? ""),
+
                );
 
 

@@ -21,6 +21,7 @@ import com.omronhealthcare.OmronConnectivityLibrary.OmronLibrary.OmronUtility.Om
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import io.flutter.plugin.common.MethodChannel;
 
@@ -80,15 +81,22 @@ public class DevicesList {
     };
 
     private void loadDeviceList() {
-        List<HashMap<String, String>>  fullDeviceList = new ArrayList<HashMap<String, String>>();
+        List<Map<String, String>>  fullDeviceList = new ArrayList<>();
        // Context ctx = App.getInstance().getApplicationContext();
-        if (OmronPeripheralManager.sharedManager(applicationContext).retrieveManagerConfiguration(applicationContext) != null) {
-            fullDeviceList = (List<HashMap<String, String>>) OmronPeripheralManager.sharedManager(applicationContext).retrieveManagerConfiguration(applicationContext).get(OmronConstants.OMRONBLEConfigDeviceKey);
+        Map<String, Object> retrieveManagerConfiguration = OmronPeripheralManager.sharedManager(applicationContext).retrieveManagerConfiguration();
+
+        if (retrieveManagerConfiguration != null) {
+
+            fullDeviceList = (List<Map<String, String>>) retrieveManagerConfiguration.get(OmronConstants.OMRONBLEConfigDeviceKey);
+
+//            fullDeviceList = (List<HashMap<String, String>>) retrieveManagerConfiguration.get(OmronConstants.OMRONBLEConfigDeviceKey);
+
+
           //  Log.d("devicesList", fullDeviceList.toString());
 
             List<String> jsonList = new ArrayList<String>();
 
-            for (HashMap<String, String> var : fullDeviceList){
+            for (Map<String, String> var : fullDeviceList){
                jsonList.add(new Gson().toJson(var));
             }
                 result.success(jsonList);

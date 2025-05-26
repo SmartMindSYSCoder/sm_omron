@@ -95,10 +95,11 @@ public class ScanningDevices  implements EventChannel.StreamHandler {
         } else {
 
             // Start Scanning for Devices using OmronPeripheralManager
-            OmronPeripheralManager.sharedManager(applicationContext).startScanPeripherals(new OmronPeripheralManagerScanListener() {
+            OmronPeripheralManager.sharedManager(applicationContext).startScanPeripherals(
+                    new OmronPeripheralManagerScanListener() {
 
                 @Override
-                public void onScanCompleted(final ArrayList<OmronPeripheral> peripheralList, final OmronErrorInfo resultInfo) {
+                public void onScanCompleted(final List<OmronPeripheral> peripheralList, final OmronErrorInfo resultInfo) {
                     Log.d("onScanCompleted", "sss");
                     Log.d("onScanCompleted", "runOnUiThread");
                     Log.d("resultInfo", "resultInfo :"+resultInfo.getResultCode());

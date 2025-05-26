@@ -1,0 +1,2 @@
+D:/projects/sm_plugins/sm_omron/example/android/app/.cxx/Debug/66j706q3/x86_64/CMakeFiles/edit_cache.dir
+D:/projects/sm_plugins/sm_omron/example/android/app/.cxx/Debug/66j706q3/x86_64/CMakeFiles/rebuild_cache.dir

@@ -45,6 +45,9 @@ public class OmronSharedMethods {
         // BCM device settings (optional)
         deviceSettings = getBCMSettings(deviceSettings);
 
+
+        deviceSettings = (ArrayList<HashMap>) getScanSettings(deviceSettings);
+
         peripheralConfig.deviceSettings = deviceSettings;
 
         // Set Scan timeout interval (optional)
@@ -245,6 +248,23 @@ public class OmronSharedMethods {
 
         return deviceSettings;
     }
+
+    private static ArrayList<HashMap> getScanSettings(ArrayList<HashMap> deviceSettings) {
+
+        // Scan Settings
+        HashMap<String, Object> ScanModeSettings = new HashMap<>();
+        HashMap<String, HashMap> ScanSettings = new HashMap<>();
+        ScanModeSettings.put(OmronConstants.OMRONDeviceScanSettings.ModeKey, OmronConstants.OMRONDeviceScanSettingsMode.MismatchSequence);
+        ScanSettings.put(OmronConstants.OMRONDeviceScanSettingsKey, ScanModeSettings);
+
+        deviceSettings.add(ScanSettings);
+
+        return deviceSettings;
+    }
+
+
+
+
 
     static BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
         @Override

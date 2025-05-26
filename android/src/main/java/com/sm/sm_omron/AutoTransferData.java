@@ -25,6 +25,8 @@ import com.omronhealthcare.OmronConnectivityLibrary.OmronLibrary.OmronUtility.Om
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
 import java.util.Objects;
 
 import io.flutter.plugin.common.MethodCall;
@@ -198,10 +200,16 @@ private  void  stopRecording(){
 
                 if (resultInfo.getResultCode() == 0 && peripheral != null) {
 
-                    HashMap<String, String> deviceInformation = peripheral.getDeviceInformation();
+//                    HashMap<String, String> deviceInformation = peripheral.getDeviceInformation();
+                    HashMap<String, String> deviceInformation = (HashMap<String, String>) peripheral.getDeviceInformation();
+
+
                     Log.d("TAGss", "Device Information : " + deviceInformation);
 
-                    ArrayList<HashMap> allSettings = (ArrayList<HashMap>) peripheral.getDeviceSettings();
+//                    ArrayList<HashMap> allSettings = (ArrayList<HashMap>) peripheral.getDeviceSettings();
+                    ArrayList<Map> allSettings = new ArrayList<Map>(peripheral.getDeviceSettings());
+
+
                     Log.i("TAGas", "Device settings : " + allSettings.toString());
 
                     mSelectedPeripheral = peripheral; // Saving for Transfer Function
@@ -287,7 +295,7 @@ private  void  stopRecording(){
 
                 if (resultInfo.getResultCode() == 0 && peripheral != null) {
 
-                    HashMap<String, String> deviceInformation = peripheral.getDeviceInformation();
+                    HashMap<String, String> deviceInformation = (HashMap<String, String>) peripheral.getDeviceInformation();
                     Log.d("TAG", "Device Information : " + deviceInformation);
 
                     ArrayList<HashMap> allSettings = (ArrayList<HashMap>) peripheral.getDeviceSettings();
@@ -357,7 +365,8 @@ private  void  stopRecording(){
 
     private void uploadData(HashMap<String, Object> vitalData, OmronPeripheral peripheral, boolean isWait) {
 
-        HashMap<String, String> deviceInfo = peripheral.getDeviceInformation();
+//        HashMap<String, String> deviceInfo = peripheral.getDeviceInformation();
+        HashMap<String, String> deviceInfo = (HashMap<String, String>) peripheral.getDeviceInformation();
 
 
 
@@ -547,7 +556,7 @@ private  void  stopRecording(){
 
                 if (errorInfo.getResultCode() == 0 && peripheral != null) {
 
-                    HashMap<String, String> deviceInformation = peripheral.getDeviceInformation();
+                    HashMap<String, String> deviceInformation = (HashMap<String, String>) peripheral.getDeviceInformation();
                     Log.d("TAG", "Device Information : " + deviceInformation);
 
                     ArrayList<HashMap> allSettings = (ArrayList<HashMap>) peripheral.getDeviceSettings();

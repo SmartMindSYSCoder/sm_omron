@@ -16,6 +16,7 @@ import com.omronhealthcare.OmronConnectivityLibrary.OmronLibrary.Model.OmronPeri
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 
 import io.flutter.plugin.common.MethodChannel;
 
@@ -55,10 +56,13 @@ public class ConnectDevice  {
             if (null != peripheral.getLocalName()) {
 
 
-                HashMap<String, String> deviceInformation = peripheral.getDeviceInformation();
+                HashMap<String, String> deviceInformation = (HashMap<String, String>) peripheral.getDeviceInformation();
                 Log.d("sss", "Device Information : " + deviceInformation);
 
-                ArrayList<HashMap> deviceSettings = omronPeripheral.getDeviceSettings();
+//                ArrayList<HashMap> deviceSettings = omronPeripheral.getDeviceSettings();
+                ArrayList<Map> deviceSettings = new ArrayList<Map>(omronPeripheral.getDeviceSettings());
+
+
                 if (deviceSettings != null) {
                     Log.d("TAGss", "Device Settings:" + deviceSettings.toString());
                 }
