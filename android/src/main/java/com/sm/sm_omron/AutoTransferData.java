@@ -79,6 +79,8 @@ public class AutoTransferData  {
 
     private void performDataTransfer() {
 
+        Log.d("performDataTransfer", "Call performDataTransfer");
+
         // Set State Change Listener
 //        setStateChanges();
 
@@ -96,7 +98,8 @@ public class AutoTransferData  {
            if (selectedUsers.size() > 1) {
                transferUsersDataWithPeripheral(mSelectedPeripheral);
            } else {
-               transferUserDataWithPeripheral(mSelectedPeripheral);
+//               transferUserDataWithPeripheral(mSelectedPeripheral);
+               transferUsersDataWithPeripheral(mSelectedPeripheral);
            }
        }
 

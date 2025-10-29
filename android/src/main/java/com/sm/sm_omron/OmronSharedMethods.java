@@ -69,9 +69,11 @@ public class OmronSharedMethods {
 
         // Set configuration for OmronPeripheralManager
         OmronPeripheralManager.sharedManager(context).setConfiguration(peripheralConfig);
+        Log.d("startManager", "Before Call startManager");
 
         //Initialize the connection process.
         OmronPeripheralManager.sharedManager(context).startManager();
+        Log.d("startManager", "After Call startManager");
 
         // Notification Listener for BLE State Change
         LocalBroadcastManager.getInstance(context).registerReceiver(mMessageReceiver,

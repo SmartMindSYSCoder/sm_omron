@@ -2,7 +2,7 @@ import 'dart:convert';
 
 class ScannedDevice {
   String? uuid;
-  String? modelName,imageAsset;
+  String? modelName, imageAsset;
   DeviceInformation? deviceInformation;
   String? localName;
   String? category;
@@ -11,12 +11,16 @@ class ScannedDevice {
 
   List<int> selectedUser;
 
-  ScannedDevice({
-    this.uuid,
-    this.modelName,this.imageAsset,this.localName,this.category,this.deviceGroupIncludedGroupIDKey,
-    this.deviceInformation,
-    this.selectedUser=const[]
-  });
+  ScannedDevice(
+      {this.uuid,
+      this.modelName,
+      this.imageAsset,
+      this.localName,
+      this.category,
+      this.identifier,
+      this.deviceGroupIncludedGroupIDKey,
+      this.deviceInformation,
+      this.selectedUser = const []});
 
   Map<String, dynamic> toJson() {
     return {
@@ -35,14 +39,19 @@ class ScannedDevice {
   }
 
   factory ScannedDevice.fromJson(Map<String, dynamic> map) {
-    var deviceInfo=jsonDecode(map['deviceInformation']);
+    var deviceInfo = jsonDecode(map['deviceInformation']);
+
+    print("from model $deviceInfo");
     return ScannedDevice(
       uuid: map['uuid'],
       modelName: map['modelName'],
-      category: map['category'],
+      category:
+          map['category'] ?? deviceInfo['OMRONDeviceInformationCategoryKey'],
       deviceGroupIncludedGroupIDKey: map['deviceGroupIncludedGroupIDKey'],
 
-      localName:deviceInfo !=null ? deviceInfo['modelName'] :"",
+      localName: map['localName'] ?? deviceInfo['localName'],
+      identifier: map['identifier'],
+
       // imageAsset: map['imageAsset'],
       deviceInformation: map['deviceInformation'] == null
           ? null
@@ -76,8 +85,7 @@ class DeviceInformation {
   String? omronDeviceInformationDisplayNameKey;
   String? omronDeviceInformationCategoryKey;
 
-  factory DeviceInformation.fromJson(dynamic json) =>
-      DeviceInformation(
+  factory DeviceInformation.fromJson(dynamic json) => DeviceInformation(
         localName: json["localName"],
         identityName: json["identityName"],
         displayName: json["displayName"],
