@@ -11,6 +11,14 @@ import 'models/scanned_device.dart';
 import 'models/transfer_options.dart';
 import 'models/vital_result.dart';
 
+export 'models/device_model.dart';
+export 'models/enums.dart';
+export 'models/personal_info.dart';
+export 'models/scanned_device.dart';
+export 'models/transfer_options.dart';
+export 'models/vital_result.dart';
+export 'widgets/device_selector_dialog.dart';
+
 /// Main class for interacting with Omron devices.
 ///
 /// This plugin provides access to Omron health devices including:

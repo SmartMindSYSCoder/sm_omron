@@ -1,13 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:sm_omron/models/device_model.dart';
-import 'package:sm_omron/models/enums.dart';
-import 'package:sm_omron/models/scanned_device.dart';
-import 'package:sm_omron/models/transfer_options.dart';
-import 'package:sm_omron/models/vital_result.dart';
 import 'package:sm_omron/sm_omron.dart';
-import 'package:sm_omron/widgets/device_selector_dialog.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

@@ -20,9 +20,27 @@ A comprehensive Flutter plugin for integrating Omron healthcare devices on Andro
 *   **Temperature** (Audio) - e.g., MC-280B-E
 *   **Wheeze Detector** (BLE) - e.g., HWZ-1000T
 
+## Installation
+
+Add the following to your `pubspec.yaml`:
+
+```yaml
+dependencies:
+  sm_omron:
+    git:
+      url: https://github.com/SmartMindSYSCoder/sm_omron.git
+```
+
 ## Getting Started
 
-### 1. Android Setup
+### 1. Import
+You now only need to import one file to access all models, enums, and widgets:
+
+```dart
+import 'package:sm_omron/sm_omron.dart';
+```
+
+### 2. Android Setup
 
 Ensure your `android/app/build.gradle` defines a minimum SDK version of at least **24** (26+ recommended for best BLE performance).
 
