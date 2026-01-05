@@ -12,13 +12,16 @@ buildscript {
     }
 }
 
+// Capture the plugin project to use in the closure
+def pluginProject = project
+
 rootProject.allprojects {
     repositories {
         google()
         mavenCentral()
-
+        
         flatDir {
-            dirs project(':sm_omron').file('libs')
+            dirs pluginProject.file('libs')
         }
     }
 }

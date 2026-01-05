@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'enums.dart';
+
 class ScannedDevice {
   String? uuid;
   String? modelName, imageAsset;
@@ -7,7 +9,16 @@ class ScannedDevice {
   String? localName;
   String? category;
   String? deviceGroupIncludedGroupIDKey;
+  String? deviceGroupIDKey;
   String? identifier;
+
+  /// Get the device category as typed enum
+  DeviceCategory get deviceCategory {
+    if (category == null) return DeviceCategory.bloodPressure;
+    final catValue = int.tryParse(category!);
+    if (catValue == null) return DeviceCategory.bloodPressure;
+    return DeviceCategory.fromValue(catValue);
+  }
 
   List<int> selectedUser;
 
@@ -19,6 +30,7 @@ class ScannedDevice {
       this.category,
       this.identifier,
       this.deviceGroupIncludedGroupIDKey,
+      this.deviceGroupIDKey,
       this.deviceInformation,
       this.selectedUser = const []});
 
@@ -30,6 +42,7 @@ class ScannedDevice {
       'category': category,
       'identifier': identifier,
       'deviceGroupIncludedGroupIDKey': deviceGroupIncludedGroupIDKey,
+      'deviceGroupIDKey': deviceGroupIDKey,
       // 'imageAsset': imageAsset,
 
       'deviceInformation': deviceInformation?.toJson(),
@@ -41,13 +54,14 @@ class ScannedDevice {
   factory ScannedDevice.fromJson(Map<String, dynamic> map) {
     var deviceInfo = jsonDecode(map['deviceInformation']);
 
-    print("from model $deviceInfo");
+    // print("from model $deviceInfo");
     return ScannedDevice(
       uuid: map['uuid'],
       modelName: map['modelName'],
       category:
           map['category'] ?? deviceInfo['OMRONDeviceInformationCategoryKey'],
       deviceGroupIncludedGroupIDKey: map['deviceGroupIncludedGroupIDKey'],
+      deviceGroupIDKey: map['deviceGroupIDKey'],
 
       localName: map['localName'] ?? deviceInfo['localName'],
       identifier: map['identifier'],

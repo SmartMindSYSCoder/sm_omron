@@ -1,50 +1,182 @@
-# sm_omron
+# SM Omron Plugin
 
-A new Flutter project.
+A comprehensive Flutter plugin for integrating Omron healthcare devices on Android. This plugin supports a wide range of devices including Blood Pressure monitors, Weight Scales, Pulse Oximeters, and Activity Trackers via BLE, as well as Temperature measurement via audio frequency.
+
+## Features
+
+*   **Unified API**: Access data from various device types through a single, consistent interface.
+*   **Normalized Data**: All results are returned as `VitalResult` objects, making it easy to handle diverse health data.
+*   **Explicit Pairing**: Robust pairing workflow that ensures devices are bonded correctly with the Android system.
+*   **Native UI**: Custom-built Android parsers and handlers for reliable data transfer.
+*   **Audio Support**: Unique support for Omron microphone-based temperature devices (e.g., MC-280B-E).
+*   **Asset Integration**: Built-in support for device thumbnails.
+
+## Supported Device Categories
+
+*   **Blood Pressure** (BLE) - e.g., BP7450, HEM-9200T
+*   **Weight Scale / Body Composition** (BLE) - e.g., BCM-500, HBF-222T
+*   **Pulse Oximeter** (BLE) - e.g., P300
+*   **Activity Tracker** (BLE) - e.g., HJA-405T
+*   **Temperature** (Audio) - e.g., MC-280B-E
+*   **Wheeze Detector** (BLE) - e.g., HWZ-1000T
 
 ## Getting Started
 
-This plugin for using omron devices
+### 1. Android Setup
 
-### PreRequests:
--Make sure bluetooth is enabled.
--You have the omron device that you want to read data from and it is in the supported models from omron.
+Ensure your `android/app/build.gradle` defines a minimum SDK version of at least **24** (26+ recommended for best BLE performance).
 
+```gradle
+defaultConfig {
+    minSdkVersion 24
+    ...
+}
+```
 
-### usage
+### 2. Permissions
 
-First step: declare instance of plugin like below:
-                
-    final _smOmronPlugin = SMOmron();
+Add the necessary permissions to your `AndroidManifest.xml`:
 
-Second step : check permission of Record for temperature device or  bluetooth for others  ,as you need  like below:
+```xml
+<!-- BLE Permissions -->
+<uses-permission android:name="android.permission.BLUETOOTH" />
+<uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" /> <!-- Required for BLE on older Android -->
+<uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
 
+<!-- Audio Permission (For Temperature Devices) -->
+<uses-permission android:name="android.permission.RECORD_AUDIO" />
+```
 
-    _smOmronPlugin.checkBluetoothPermissions();
-    _smOmronPlugin.checkRecordPermissions();
+### 3. Assets Configuration
 
-Third step : now you need to add device to save it and use it again 
-- press the bluetooth button of device about 5 or 10 sec  to enable bluetooth pairing mode
-- show all supported devices models then press the device you want to add    /// show example for more details
+To display device thumbnails, add the plugin's asset path to your `pubspec.yaml`:
 
-      await getDevicesModels(context);
+```yaml
+flutter:
+  assets:
+    - packages/sm_omron/assets/images/
+```
 
-Forth step : now device must be added in savedDevices list you can start measure then press on the saved device  item and send the scannedDevice object
+## Usage
 
+### Initialization
 
+```dart
+import 'package:sm_omron/sm_omron.dart';
 
-     var omronData=await     _smOmronPlugin.readDevice(deviceIdentifier: savedDevices[index].deviceInformation!.omronDeviceInformationIdentityNameKey!, scannedDevice: savedDevices[index]);
+final _smOmron = SMOmron();
+```
 
-        if(omronData !=null) {
+### 1. Permissions Check
 
+Before starting, request the required permissions:
 
-           /// use data as you want 
-                               
-                          }
+```dart
+// For BLE Devices
+await _smOmron.checkBluetoothPermissions();
 
-                               else {
+// For Audio/Temperature Devices
+await _smOmron.checkMicrophonePermissions();
+```
 
+### 2. Discover & Pair Device
 
-                              ///   print("**************    No Data");
+Use the built-in `OmronDeviceSelectorDialog` to let users choose a compatible device, then scan and pair it.
 
-                               }
+```dart
+// 1. Show Device Selector
+final deviceModel = await OmronDeviceSelectorDialog.show(
+  context,
+  title: "Select Your Device",
+  categoryFilter: DeviceCategory.bloodPressure, // Optional filter
+);
+
+if (deviceModel != null) {
+  // 2. Scan for the specific device
+  // This helps filter the scan to only the selected model
+  final scannedDevice = await _smOmron.scanBleDevice(device: deviceModel);
+  
+  if (scannedDevice != null) {
+     // 3. Explicitly pair (Bond)
+     // NOTE: This triggers the system pairing dialog
+     bool paired = await _smOmron.pairBleDevice(device: scannedDevice);
+     
+     if (paired) {
+       // 4. Save device for future use
+       await _smOmron.saveDevice(scannedDevice);
+     }
+  }
+}
+```
+
+### 3. Transfer Data (BLE)
+
+Once a device is paired and saved, you can transfer data from it.
+
+```dart
+try {
+  List<VitalResult> results = await _smOmron.transferFromBleDevice(
+    device: mySavedDevice,
+    options: TransferOptions(
+      readHistoricalData: true, // Set to true to read all past data
+    ),
+    // personalInfo is required for Body Composition devices (Weight scales)
+    personalInfo: PersonalInfo(
+        heightCm: 175, 
+        weightKg: 70, 
+        dateOfBirth: DateTime(1990, 1, 1), 
+        gender: Gender.male
+    ),
+  );
+
+  for (var result in results) {
+     print("Sys: ${result.systolic}, Dia: ${result.diastolic}");
+  }
+} catch (e) {
+  print("Transfer failed: $e");
+}
+```
+
+### 4. Record Temperature (Audio)
+
+For microphone-based devices like the MC-280B-E:
+
+```dart
+try {
+  VitalResult? tempResult = await _smOmron.recordTemperature();
+  
+  if (tempResult != null) {
+    print("Temp: ${tempResult.temperature} ${tempResult.temperatureUnit}");
+  }
+} catch (e) {
+  print("Recording failed: $e");
+}
+```
+
+### 5. Unpairing
+
+To remove a device and unbond it from the Android system:
+
+```dart
+await _smOmron.removeDevice(mySavedDevice);
+```
+
+## Data Models
+
+### VitalResult
+
+The `VitalResult` class unifies all measurements. Check `result.type` to know which fields are populated.
+
+*   **Blood Pressure**: `systolic`, `diastolic`, `pulse`, `irregularHeartbeat`
+*   **Weight**: `weight`, `bodyFat`, `skeletalMuscle`, `bmi`
+*   **Activity**: `steps`, `calories`, `distance`
+*   **Pulse Ox**: `spo2Level`, `pulseRate`
+*   **Temperature**: `temperature`
+
+## Troubleshooting
+
+*   **System Pairing Dialog Not Creating**: The plugin uses a native fix to force the pairing dialog. If it still doesn't appear, ensure the device is in "Pairing Mode" (usually hold the Bluetooth button for 3-5 seconds until it flashes 'P').
+*   **"MissingPluginException"**: Ensure you have rebuilt the app (`flutter run`) after adding the plugin packages.
+*   **Location Permission**: On Android 11 and below, `ACCESS_FINE_LOCATION` is required for BLE scanning to work. Ensure this is granted.

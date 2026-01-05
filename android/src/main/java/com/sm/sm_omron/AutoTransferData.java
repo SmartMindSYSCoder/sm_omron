@@ -47,7 +47,7 @@ public class AutoTransferData  {
         this.applicationContext=context;
     }
 
-    void initializeFun(  String localName,String uuid  ) {
+    void initializeFun(  String localName,String uuid ,int category ) {
 
 //        this.map=map;
 
@@ -59,19 +59,20 @@ public class AutoTransferData  {
         selectedUsers.add(1);
 
 
-        if (
-                mSelectedPeripheral.getUuid() == null ||mSelectedPeripheral. getDeviceInformation() == null || mSelectedPeripheral. getLocalName() == null) {
+        if (mSelectedPeripheral.getUuid() == null || mSelectedPeripheral.getLocalName() == null) {
             Log.d("message", "Device Not Paired");
             return;
         }
 
         // Disclaimer: Read definition before usage
-        if (Integer.parseInt(device.get(OmronConstants.OMRONBLEConfigDevice.Category)) == OmronConstants.OMRONBLEDeviceCategory.ACTIVITY || Integer.parseInt(device.get(OmronConstants.OMRONBLEConfigDevice.Category)) == OmronConstants.OMRONBLEDeviceCategory.PULSEOXIMETER) {
+        if (category == OmronConstants.OMRONBLEDeviceCategory.ACTIVITY || category == OmronConstants.OMRONBLEDeviceCategory.PULSEOXIMETER) {
             startOmronPeripheralManager(false, false,applicationContext);
-            Log.d("message", "Device Not sssss");
+           // Log.d("message", "Device Not sssss");
             performDataTransfer();
         } else {
-            startOmronPeripheralManager(false, false,applicationContext);
+             Log.d("category", "************************ categoty = "+category);
+
+            startOmronPeripheralManager(true, false,applicationContext);
             performDataTransfer();
 
         }
@@ -366,188 +367,69 @@ private  void  stopRecording(){
     }
 
 
+    protected void onTransferComplete(List<HashMap<String, Object>> vitalDataList) {
+        Gson gson = new Gson();
+        List<String> jsonList = new ArrayList<>();
+        if (vitalDataList != null) {
+            for (HashMap<String, Object> element : vitalDataList) {
+                jsonList.add(gson.toJson(element));
+            }
+        }
+        result.success(jsonList);
+    }
+
     private void uploadData(HashMap<String, Object> vitalData, OmronPeripheral peripheral, boolean isWait) {
-
-//        HashMap<String, String> deviceInfo = peripheral.getDeviceInformation();
         HashMap<String, String> deviceInfo = (HashMap<String, String>) peripheral.getDeviceInformation();
-
-
-
 
         // Blood Pressure Data
         final ArrayList<HashMap<String, Object>> bloodPressureItemList = (ArrayList<HashMap<String, Object>>) vitalData.get(OmronConstants.OMRONVitalDataBloodPressureKey);
-
-
-//        if (bloodPressureItemList != null) {
-//
-//            for (HashMap<String, Object> bpItem : bloodPressureItemList) {
-//                Log.d("Blood Pressure - ", bpItem.toString());
-//            }
-////            insertVitalDataToDB(bloodPressureItemList, deviceInfo);
-//        }
-
-
-        if (bloodPressureItemList != null  && !bloodPressureItemList.isEmpty()) {
-
-            Gson gson = new Gson();
-
-            List<String> jsonList = new ArrayList<String>();
-
-            for (HashMap<String, Object> element : bloodPressureItemList) {
-                jsonList.add(gson.toJson(element));
-            }
-            //   Log.d("weightItemList","  this is from weightItemList check\n json list *********************************  "+ jsonList.toString());
-
-            result.success(jsonList);
+        if (bloodPressureItemList != null && !bloodPressureItemList.isEmpty()) {
+            onTransferComplete(bloodPressureItemList);
             disconnectDevice();
             return;
-
-
-
-
-
-
-//            for (HashMap<String, Object> weightItem : weightData) {
-//                Log.d("Weight - ", " Weight \n *****************   "+weightItem.toString());
-//            }
-//            insertRecordToDB(recordData, deviceInfo);
-        }
-
-
-
-
-        // Activity Data
-        ArrayList<HashMap<String, Object>> activityList = (ArrayList<HashMap<String, Object>>) vitalData.get(OmronConstants.OMRONVitalDataActivityKey);
-        if (activityList != null) {
-
-            for (HashMap<String, Object> activityItem : activityList) {
-
-                List<String> list = new ArrayList<String>(activityItem.keySet());
-
-                for (String key : list) {
-
-                    Log.d("Activity key - ", key);
-                    Log.d("Activity key - ", key);
-                    Log.d("Activity Data - ", activityItem.get(key).toString());
-
-                    if (key.equalsIgnoreCase(OmronConstants.OMRONActivityData.AerobicStepsPerDay) || key.equalsIgnoreCase(OmronConstants.OMRONActivityData.StepsPerDay) || key.equalsIgnoreCase(OmronConstants.OMRONActivityData.DistancePerDay) || key.equalsIgnoreCase(OmronConstants.OMRONActivityData.WalkingCaloriesPerDay)) {
-//                        insertActivityToDB((HashMap<String, Object>) activityItem.get(key), deviceInfo, key);
-                    }
-                }
-            }
-        }
-
-        // Sleep Data
-        ArrayList<HashMap<String, Object>> sleepingData = (ArrayList<HashMap<String, Object>>) vitalData.get(OmronConstants.OMRONVitalDataSleepKey);
-        if (sleepingData != null) {
-
-            for (HashMap<String, Object> sleepitem : sleepingData) {
-                Log.d("Sleep - ", sleepitem.toString());
-            }
-//            insertSleepToDB(sleepingData, deviceInfo);
-        }
-
-        // Records Data
-        ArrayList<HashMap<String, Object>> recordData = (ArrayList<HashMap<String, Object>>) vitalData.get(OmronConstants.OMRONVitalDataRecordKey);
-        if (recordData != null) {
-
-            for (HashMap<String, Object> recordItem : recordData) {
-                Log.d("Record - ", recordItem.toString());
-            }
-//            insertRecordToDB(recordData, deviceInfo);
         }
 
         // Weight Data
         ArrayList<HashMap<String, Object>> weightData = (ArrayList<HashMap<String, Object>>) vitalData.get(OmronConstants.OMRONVitalDataWeightKey);
-        if (weightData != null  && !weightData.isEmpty()) {
-
-            Gson gson = new Gson();
-
-            List<String> jsonList = new ArrayList<String>();
-
-            for (HashMap<String, Object> element : weightData) {
-                jsonList.add(gson.toJson(element));
-            }
-         //   Log.d("weightItemList","  this is from weightItemList check\n json list *********************************  "+ jsonList.toString());
-
-            result.success(jsonList);
+        if (weightData != null && !weightData.isEmpty()) {
+            onTransferComplete(weightData);
             disconnectDevice();
             return;
-
         }
 
-
-        // Temperature Data
-        ArrayList<HashMap<String, Object>> temperatureData = (ArrayList<HashMap<String, Object>>)
-                vitalData.get(OmronConstants.OMRONVitalDataTemperatureKey);
-        if (temperatureData != null) {
-
-
-            for (HashMap<String, Object> temperatureItem : temperatureData) {
-             //   Log.d("TemperatureKey", "\n***********************************\n" +temperatureItem.toString());
-            }
-
-        }
-
-
-
-
-        // Pulse oxximeter Data
+        // Pulse Oximeter Data
         ArrayList<HashMap<String, Object>> pulseOximeterData = (ArrayList<HashMap<String, Object>>) vitalData.get(OmronConstants.OMRONVitalDataPulseOximeterKey);
-//        if (pulseOximeterData != null) {
-//
-//            for (HashMap<String, Object> pulseOximeterItem : pulseOximeterData) {
-//                Log.d("Pulse Oximeter - ", pulseOximeterItem.toString());
-//            }
-//        }
-
-        if (pulseOximeterData != null  && !pulseOximeterData.isEmpty()) {
-
-            Gson gson = new Gson();
-
-            List<String> jsonList = new ArrayList<String>();
-
-            for (HashMap<String, Object> element : pulseOximeterData) {
-                jsonList.add(gson.toJson(element));
-            }
-            //   Log.d("weightItemList","  this is from weightItemList check\n json list *********************************  "+ jsonList.toString());
-
-            result.success(jsonList);
+        if (pulseOximeterData != null && !pulseOximeterData.isEmpty()) {
+            onTransferComplete(pulseOximeterData);
             disconnectDevice();
             return;
-
-
-
-
-
-
-//            for (HashMap<String, Object> weightItem : weightData) {
-//                Log.d("Weight - ", " Weight \n *****************   "+weightItem.toString());
-//            }
-//            insertRecordToDB(recordData, deviceInfo);
+        }
+        
+        // Activity Data
+        ArrayList<HashMap<String, Object>> activityList = (ArrayList<HashMap<String, Object>>) vitalData.get(OmronConstants.OMRONVitalDataActivityKey);
+        if (activityList != null && !activityList.isEmpty()) {
+             // Activity is complicated, it has sub-keys. For now, pass the main list.
+             // But wait, the original code looked for specific keys inside activityItem. 
+             // To simplify for the new parser, let's just pass the list.
+             onTransferComplete(activityList);
+             disconnectDevice();
+             return;
+        }
+        
+        // Wheeze Data? (Original code didn't handle it explicitly but new parser does)
+        // If we want to support it, we should add it here.
+        ArrayList<HashMap<String, Object>> wheezeList = (ArrayList<HashMap<String, Object>>) vitalData.get(OmronConstants.OMRONVitalDataWheezeKey);
+        if (wheezeList != null && !wheezeList.isEmpty()) {
+            onTransferComplete(wheezeList);
+            disconnectDevice();
+            return; 
         }
 
-
-
-
-        if (isWait) {
-
-//            mHandler = new Handler();
-//            mRunnable = new Runnable() {
-//                @Override
-//                public void run() {
-//                    continueDataTransfer();
-//                }
-//            };
-//
-//            mHandler.postDelayed(mRunnable, TIME_INTERVAL);
-
-        } else {
-
-//            if (mHandler != null)
-//                mHandler.removeCallbacks(mRunnable);
-
-          //  continueDataTransfer();
+        // Default: just disconnect if nothing found/handled
+        disconnectDevice();
+        // Maybe error? 
+        if (!isWait) {
+            result.error("NO_DATA", "No data found", null);
         }
     }
 

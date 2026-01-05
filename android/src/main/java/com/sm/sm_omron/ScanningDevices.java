@@ -118,6 +118,8 @@ public class ScanningDevices  implements EventChannel.StreamHandler {
                             map.put("modelName", element.getModelName());
                             map.put("uuid", element.getUuid());
                             map.put("serialId", element.getSerialId());
+                            map.put("deviceGroupIDKey", element.getDeviceGroupIDKey());
+                            map.put("deviceGroupIncludedGroupIDKey", element.getDeviceGroupIncludedGroupIDKey());
                             map.put("deviceInformation", gson.toJson(element.getDeviceInformation()));
                             jsonList.add(gson.toJson(map));
 
@@ -467,6 +469,10 @@ public class ScanningDevices  implements EventChannel.StreamHandler {
 
     @Override
     public void onCancel(Object arguments) {
+        // Ensure scanning is stopped when the stream is canceled
+        if (isScan) {
+            stopScanning(null);
+        }
         scanningDevicesEvent = null;
     }
 }

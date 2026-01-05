@@ -36,7 +36,7 @@ class DeviceModel {
         deviceProtocol: json["deviceProtocol"],
         image: json["image"],
         modelSeries: json["modelSeries"],
-        thumbnail: json["thumbnail"],
+        thumbnail: json["thumbnail"] ?? json["Thumbnail"],
         deviceGroupIdKey: json["deviceGroupIDKey"],
         noOfUsers: json["noOfUsers"] ?? '-1',
         id: json["id"],
