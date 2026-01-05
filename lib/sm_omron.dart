@@ -32,7 +32,13 @@ class SMOmron {
   StreamController<OmronConnectionState>? _connectionStateController;
 
   SMOmron() {
-    GetStorage.init();
+    // Initialize GetStorage if not already initialized
+    // However, it is better to call initialize() explicitly
+  }
+
+  /// Initialize the plugin dependencies.
+  Future<void> initialize() async {
+    await GetStorage.init();
   }
 
   // ============================================================
@@ -145,6 +151,11 @@ class SMOmron {
   /// This establishes the bonding without transferring data.
   /// Call this after scanning and before saving the device.
   Future<bool> pairBleDevice({required ScannedDevice device}) async {
+    // Intercept recording wave device - no pairing needed
+    if (device.isRecordingWave) {
+      return true;
+    }
+
     try {
       await _methodChannel.invokeMethod('connectToDevice', device.toJson());
       return true;
@@ -269,6 +280,27 @@ class SMOmron {
     }
 
     return null;
+  }
+
+  /// Create a recording wave device manually (since it uses audio, not BLE scanning).
+  ScannedDevice addRecordingWaveDevice(DeviceModel device) {
+    final uuid = DateTime.now().microsecondsSinceEpoch.toString();
+    const localName = "MODEL_MC_280B_E"; // Or dynamic based on device
+
+    return ScannedDevice(
+      uuid: uuid,
+      modelName: device.modelName,
+      identifier: device.identifier,
+      category: device.category,
+      selectedUser: [1],
+      deviceInformation: DeviceInformation(
+        uuid: uuid,
+        localName: localName,
+        omronDeviceInformationCategoryKey: device.category,
+        omronDeviceInformationLocalNameKey: localName,
+        displayName: device.modelDisplayName,
+      ),
+    );
   }
 
   /// Legacy method for weight reading.

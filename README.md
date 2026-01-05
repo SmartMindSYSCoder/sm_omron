@@ -49,15 +49,7 @@ Add the necessary permissions to your `AndroidManifest.xml`:
 <uses-permission android:name="android.permission.RECORD_AUDIO" />
 ```
 
-### 3. Assets Configuration
 
-To display device thumbnails, add the plugin's asset path to your `pubspec.yaml`:
-
-```yaml
-flutter:
-  assets:
-    - packages/sm_omron/assets/images/
-```
 
 ## Usage
 
@@ -67,6 +59,9 @@ flutter:
 import 'package:sm_omron/sm_omron.dart';
 
 final _smOmron = SMOmron();
+
+// Required: Initialize plugin storage
+await _smOmron.initialize();
 ```
 
 ### 1. Permissions Check
@@ -94,13 +89,20 @@ final deviceModel = await OmronDeviceSelectorDialog.show(
 );
 
 if (deviceModel != null) {
-  // 2. Scan for the specific device
-  // This helps filter the scan to only the selected model
-  final scannedDevice = await _smOmron.scanBleDevice(device: deviceModel);
+  ScannedDevice? scannedDevice;
+
+  // 2. Check Device Type (Audio vs BLE)
+  if (deviceModel.isRecordingWave) {
+    // For Audio/Temperature devices (e.g. MC-280B-E), create directly
+    scannedDevice = _smOmron.addRecordingWaveDevice(deviceModel);
+  } else {
+    // For BLE devices, scan specifically for the selected model
+    scannedDevice = await _smOmron.scanBleDevice(device: deviceModel);
+  }
   
   if (scannedDevice != null) {
-     // 3. Explicitly pair (Bond)
-     // NOTE: This triggers the system pairing dialog
+     // 3. Explicitly pair (Bond) if needed (for BLE)
+     // Audio devices skip this or return true immediately
      bool paired = await _smOmron.pairBleDevice(device: scannedDevice);
      
      if (paired) {

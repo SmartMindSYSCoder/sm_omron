@@ -68,6 +68,7 @@ class OmronDeviceSelectorDialog extends StatefulWidget {
     return showDialog<DeviceModel>(
       context: context,
       builder: (context) => Dialog(
+        clipBehavior: Clip.antiAlias,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxHeight: 500, maxWidth: 400),
           child: OmronDeviceSelectorDialog(
@@ -155,7 +156,7 @@ class _OmronDeviceSelectorDialogState extends State<OmronDeviceSelectorDialog> {
       children: [
         _buildHeader(),
         const Divider(height: 1),
-        Expanded(child: _buildContent()),
+        Flexible(child: _buildContent()),
       ],
     );
   }

@@ -138,3 +138,103 @@ enum OmronConnectionState {
     }
   }
 }
+
+/// Device Identifiers
+enum DeviceIdentifier {
+  /// Blood Pressure - HPO-300T
+  HPO_300T('HPO-300T'),
+
+  /// Blood Pressure - HEM-7280T_TI-D/E
+  HEM_7280T_TI_D_E('HEM-7280T_TI-D/E'),
+
+  /// Blood Pressure - HEM-7280T-E
+  HEM_7280T_E('HEM-7280T-E'),
+
+  /// Blood Pressure - HEM-7322T-D
+  HEM_7322T_D('HEM-7322T-D'),
+
+  /// Blood Pressure - HEM-7322T-E
+  HEM_7322T_E('HEM-7322T-E'),
+
+  /// Blood Pressure - HEM-7600T-E
+  HEM_7600T_E('HEM-7600T-E'),
+
+  /// Blood Pressure - HEM-6161T-D/E
+  HEM_6161T_D_E('HEM-6161T-D/E'),
+
+  /// Blood Pressure - HEM-6232T-D/E
+  HEM_6232T_D_E('HEM-6232T-D/E'),
+
+  /// Weight Scale - HBF-222T_E
+  HBF_222T_E('HBF-222T_E'),
+
+  /// Blood Pressure - HEM-7155T-EBK
+  HEM_7155T_EBK('HEM-7155T-EBK'),
+
+  /// Blood Pressure - HEM-7155T_ESL
+  HEM_7155T_ESL('HEM-7155T_ESL'),
+
+  /// Blood Pressure - HEM-7155T-D
+  HEM_7155T_D('HEM-7155T-D'),
+
+  /// Blood Pressure - HEM-7361T-EBK
+  HEM_7361T_EBK('HEM-7361T-EBK'),
+
+  /// Blood Pressure - HEM-7361T_ESL
+  HEM_7361T_ESL('HEM-7361T_ESL'),
+
+  /// Blood Pressure - HEM-7361T-D
+  HEM_7361T_D('HEM-7361T-D'),
+
+  /// Blood Pressure - HEM-9601T_E3
+  HEM_9601T_E3('HEM-9601T_E3'),
+
+  /// Blood Pressure - HEM-7530T-E3
+  HEM_7530T_E3('HEM-7530T-E3'),
+
+  /// Wheeze - HWZ-1000T-E
+  HWZ_1000T_E('HWZ-1000T-E'),
+
+  /// Temperature - MC-280B-E
+  MC_280B_E('MC-280B-E'),
+
+  /// Weight Scale - HN-300T2-EBK
+  HN_300T2_EBK('HN-300T2-EBK'),
+
+  /// Weight Scale - HN-300T2-EGY
+  HN_300T2_EGY('HN-300T2-EGY'),
+
+  /// Blood Pressure - HEM-7143T2-ESL
+  HEM_7143T2_ESL('HEM-7143T2-ESL'),
+
+  /// Blood Pressure - HEM-7143T1-EBK
+  HEM_7143T1_EBK('HEM-7143T1-EBK'),
+
+  /// Blood Pressure - HEM-7143T1-D
+  HEM_7143T1_D('HEM-7143T1-D'),
+
+  /// Blood Pressure - BP7450 (Kept as common reference if needed, though not in scan list)
+  BP7450('BP7450'),
+
+  /// Weight Scale - BCM-500
+  BCM_500('BCM-500'),
+
+  /// Pulse Oximeter - P300
+  P300('P300'),
+
+  /// Activity Tracker - HJA-405T
+  HJA_405T('HJA-405T'),
+
+  /// Unknown device
+  UNKNOWN('Unknown');
+
+  final String key;
+  const DeviceIdentifier(this.key);
+
+  static DeviceIdentifier fromKey(String? key) {
+    return DeviceIdentifier.values.firstWhere(
+      (e) => e.key == key,
+      orElse: () => UNKNOWN,
+    );
+  }
+}

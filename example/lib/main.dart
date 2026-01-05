@@ -9,11 +9,8 @@ import 'package:sm_omron/models/vital_result.dart';
 import 'package:sm_omron/sm_omron.dart';
 import 'package:sm_omron/widgets/device_selector_dialog.dart';
 
-import 'package:get_storage/get_storage.dart';
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await GetStorage.init();
   runApp(const MyApp());
 }
 
@@ -55,6 +52,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _initPlugin() async {
+    await _smOmron.initialize();
     // Listen to connection state changes
     _stateSubscription = _smOmron.connectionStateStream.listen((state) {
       if (mounted) {
@@ -92,74 +90,48 @@ class _HomePageState extends State<HomePage> {
 
     if (device == null) return;
 
-    // Check if it's a temperature device (audio-based)
-    if (device.identifier == 'MC-280B-E') {
-      await _addTemperatureDevice(device);
-    } else {
-      await _scanAndAddBleDevice(device);
-    }
+    await _handleAddDevice(device);
   }
 
-  Future<void> _addTemperatureDevice(DeviceModel device) async {
-    // Temperature device doesn't require scanning
-    final uuid = DateTime.now().microsecondsSinceEpoch.toString();
-    const localName = "MODEL_MC_280B_E";
-
-    final scannedDevice = ScannedDevice(
-      uuid: uuid,
-      modelName: device.modelName,
-      identifier: device.identifier,
-      category: device.category,
-      selectedUser: [1],
-      deviceInformation: DeviceInformation(
-        uuid: uuid,
-        localName: localName,
-        omronDeviceInformationCategoryKey: device.category,
-        omronDeviceInformationLocalNameKey: localName,
-        displayName: device.modelDisplayName,
-      ),
-    );
-
-    await _smOmron.saveDevice(scannedDevice);
-    await _loadSavedDevices();
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Temperature device added')),
-      );
-    }
-  }
-
-  Future<void> _scanAndAddBleDevice(DeviceModel device) async {
+  Future<void> _handleAddDevice(DeviceModel device) async {
     setState(() {
       _result = "Scanning for ${device.modelName}...";
     });
 
     try {
-      final scannedDevice = await _smOmron.scanBleDevice(device: device);
+      ScannedDevice? scannedDevice;
 
-      if (scannedDevice != null) {
+      // Check if it's a recording wave device (e.g. MC-280B-E)
+      if (device.isRecordingWave) {
+        scannedDevice = _smOmron.addRecordingWaveDevice(device);
+      } else {
+        // Otherwise, perform BLE scan
+        scannedDevice = await _smOmron.scanBleDevice(device: device);
+      }
+
+      final sDevice = scannedDevice;
+      if (sDevice != null) {
         if (mounted) {
           setState(() {
-            _result = "Pairing with ${scannedDevice.modelName}...";
+            _result = "Pairing with ${sDevice.modelName}...";
           });
         }
 
-        final paired = await _smOmron.pairBleDevice(device: scannedDevice);
+        final paired = await _smOmron.pairBleDevice(device: sDevice);
 
         if (paired) {
-          await _smOmron.saveDevice(scannedDevice);
+          await _smOmron.saveDevice(sDevice);
           await _loadSavedDevices();
 
           if (mounted) {
             setState(() {
-              _result = "Device paired & saved: ${scannedDevice.modelName}";
+              _result = "Device paired & saved: ${sDevice.modelName}";
             });
           }
         } else {
           if (mounted) {
             setState(() {
-              _result = "Pairing failed for ${scannedDevice.modelName}";
+              _result = "Pairing failed for ${sDevice.modelName}";
             });
           }
         }

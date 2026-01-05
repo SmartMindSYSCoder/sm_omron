@@ -1,3 +1,5 @@
+import 'enums.dart';
+
 class DeviceModel {
   DeviceModel({
     this.modelName,
@@ -64,5 +66,19 @@ class DeviceModel {
       return null;
     }
     return 'assets/drawable/$image.png';
+  }
+
+  /// Get the device identifier as an enum
+  DeviceIdentifier? get deviceIdentifier {
+    if (identifier == null) return null;
+    return DeviceIdentifier.fromKey(identifier);
+  }
+
+  /// Check if the device is a recording wave device (e.g. Temperature, Wheeze)
+  /// Currently only Temperature (Audio) is handled this way in the context of "RecordingWave"
+  /// logically, but the user specifically asked for "RecordingWave".
+  /// MC-280B-E is the temperature device that uses audio recording.
+  bool get isRecordingWave {
+    return deviceIdentifier == DeviceIdentifier.MC_280B_E;
   }
 }

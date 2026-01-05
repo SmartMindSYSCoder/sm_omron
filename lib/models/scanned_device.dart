@@ -12,6 +12,15 @@ class ScannedDevice {
   String? deviceGroupIDKey;
   String? identifier;
 
+  /// Get the device identifier as an enum
+  DeviceIdentifier? get deviceIdentifier {
+    if (identifier == null) return null;
+    return DeviceIdentifier.fromKey(identifier);
+  }
+
+  /// Check if the device is a recording wave device (e.g. Temperature)
+  bool get isRecordingWave => deviceIdentifier == DeviceIdentifier.MC_280B_E;
+
   /// Get the device category as typed enum
   DeviceCategory get deviceCategory {
     if (category == null) return DeviceCategory.bloodPressure;
