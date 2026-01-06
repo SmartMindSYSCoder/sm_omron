@@ -27,8 +27,7 @@ Add the following to your `pubspec.yaml`:
 ```yaml
 dependencies:
   sm_omron:
-    git:
-      url: https://github.com/SmartMindSYSCoder/sm_omron.git
+    git: https://github.com/SmartMindSYSCoder/sm_omron.git
 ```
 
 ## Getting Started
