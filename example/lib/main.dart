@@ -100,7 +100,18 @@ class _HomePageState extends State<HomePage> {
         scannedDevice = _smOmron.addRecordingWaveDevice(device);
       } else {
         // Otherwise, perform BLE scan
-        scannedDevice = await _smOmron.scanBleDevice(device: device);
+        if (device.deviceIdentifier != null) {
+          scannedDevice = await _smOmron.scanBleDevice(
+              deviceIdentifier: device.deviceIdentifier!);
+        } else {
+          // Fallback or error if identifier not mapped
+          if (mounted) {
+            setState(() {
+              _result =
+                  "Error: Device identifier not found for ${device.modelName}";
+            });
+          }
+        }
       }
 
       final sDevice = scannedDevice;

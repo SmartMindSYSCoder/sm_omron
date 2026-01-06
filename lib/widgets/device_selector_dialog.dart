@@ -18,9 +18,9 @@ typedef OnDeviceSelected = void Function(DeviceModel device);
 ///   context,
 ///   categoryFilter: DeviceCategory.bloodPressure,
 /// );
-/// if (device != null) {
-///   final scanned = await smOmron.scanBleDevice(device: device);
-/// }
+///   if (device != null && device.deviceIdentifier != null) {
+///     final scanned = await smOmron.scanBleDevice(deviceIdentifier: device.deviceIdentifier!);
+///   }
 /// ```
 class OmronDeviceSelectorDialog extends StatefulWidget {
   /// Filter devices by category (null = show all).

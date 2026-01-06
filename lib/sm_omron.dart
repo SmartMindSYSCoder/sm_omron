@@ -128,16 +128,24 @@ class SMOmron {
 
   /// Scan for a specific BLE device.
   ///
-  /// This initiates a Bluetooth scan for the specified [device] model.
+  /// This initiates a Bluetooth scan for the specified [deviceIdentifier].
   /// Returns the [ScannedDevice] if found, or `null` if not found within timeout.
   ///
   /// Use this for pairing new devices. Once paired, save the device
   /// using [saveDevice] for future data transfers.
   Future<ScannedDevice?> scanBleDevice({
-    required DeviceModel device,
+    required DeviceIdentifier deviceIdentifier,
     Duration timeout = const Duration(seconds: 30),
   }) async {
-    if (device.identifier == null) return null;
+    // Lookup the device model to get full configuration required by native method
+    final devices = await getSupportedDevices();
+    final device =
+        devices.firstWhereOrNull((d) => d.identifier == deviceIdentifier.key);
+
+    if (device == null) {
+      print("Device model not found for identifier: ${deviceIdentifier.key}");
+      return null;
+    }
 
     dynamic scanData =
         await _methodChannel.invokeMethod('scan', device.toJson());
@@ -440,11 +448,12 @@ class SMOmron {
 
   @Deprecated('Use scanBleDevice instead')
   Future<ScannedDevice?> scan({required String deviceIdentifier}) async {
-    final devices = await getSupportedDevices();
-    final device =
-        devices.firstWhereOrNull((d) => d.identifier == deviceIdentifier);
-    if (device == null) return null;
-    return scanBleDevice(device: device);
+    final identifierEnum = DeviceIdentifier.fromKey(deviceIdentifier);
+    // If unknown, we can't reliably scan without a model match, but scanBleDevice handles lookup.
+    // scanBleDevice expects a valid DeviceIdentifier.
+    if (identifierEnum == DeviceIdentifier.UNKNOWN) return null;
+
+    return scanBleDevice(deviceIdentifier: identifierEnum);
   }
 
   @Deprecated('Use checkBluetoothPermissions instead')

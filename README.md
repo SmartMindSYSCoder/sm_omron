@@ -114,7 +114,10 @@ if (deviceModel != null) {
     scannedDevice = _smOmron.addRecordingWaveDevice(deviceModel);
   } else {
     // For BLE devices, scan specifically for the selected model
-    scannedDevice = await _smOmron.scanBleDevice(device: deviceModel);
+    // Ensure the device has a valid identifier mapped
+    if (deviceModel.deviceIdentifier != null) {
+      scannedDevice = await _smOmron.scanBleDevice(deviceIdentifier: deviceModel.deviceIdentifier!);
+    }
   }
   
   if (scannedDevice != null) {
