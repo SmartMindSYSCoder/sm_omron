@@ -56,6 +56,9 @@ class OmronDeviceSelectorDialog extends StatefulWidget {
   /// Background color for category icons container.
   final Color? categoryIconBackgroundColor;
 
+  /// Background color for device icon container.
+  final Color? deviceIconBackgroundColor;
+
   /// Custom item builder for full customization.
   final Widget Function(BuildContext, DeviceModel)? itemBuilder;
 
@@ -84,6 +87,7 @@ class OmronDeviceSelectorDialog extends StatefulWidget {
     this.categorySubtitleStyle,
     this.categoryIconColor,
     this.categoryIconBackgroundColor,
+    this.deviceIconBackgroundColor,
     this.itemBuilder,
     this.onDeviceSelected,
     this.loadingWidget,
@@ -107,6 +111,7 @@ class OmronDeviceSelectorDialog extends StatefulWidget {
     TextStyle? categorySubtitleStyle,
     Color? categoryIconColor,
     Color? categoryIconBackgroundColor,
+    Color? deviceIconBackgroundColor,
     Widget Function(BuildContext, DeviceModel)? itemBuilder,
     bool groupByCategory = true,
   }) {
@@ -130,6 +135,7 @@ class OmronDeviceSelectorDialog extends StatefulWidget {
             categorySubtitleStyle: categorySubtitleStyle,
             categoryIconColor: categoryIconColor,
             categoryIconBackgroundColor: categoryIconBackgroundColor,
+            deviceIconBackgroundColor: deviceIconBackgroundColor,
             itemBuilder: itemBuilder,
             groupByCategory: groupByCategory,
             onDeviceSelected: (device) => Navigator.of(context).pop(device),
@@ -155,6 +161,7 @@ class OmronDeviceSelectorDialog extends StatefulWidget {
     TextStyle? categorySubtitleStyle,
     Color? categoryIconColor,
     Color? categoryIconBackgroundColor,
+    Color? deviceIconBackgroundColor,
     Widget Function(BuildContext, DeviceModel)? itemBuilder,
     bool groupByCategory = true,
   }) {
@@ -182,6 +189,7 @@ class OmronDeviceSelectorDialog extends StatefulWidget {
           categorySubtitleStyle: categorySubtitleStyle,
           categoryIconColor: categoryIconColor,
           categoryIconBackgroundColor: categoryIconBackgroundColor,
+          deviceIconBackgroundColor: deviceIconBackgroundColor,
           itemBuilder: itemBuilder,
           groupByCategory: groupByCategory,
           onDeviceSelected: (device) => Navigator.of(context).pop(device),
@@ -419,7 +427,8 @@ class _OmronDeviceSelectorDialogState extends State<OmronDeviceSelectorDialog> {
             height: 40,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              color: widget.deviceIconBackgroundColor ??
+                  Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(8),
             ),
             // Try to show image if available, else icon

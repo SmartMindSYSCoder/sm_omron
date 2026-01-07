@@ -87,6 +87,7 @@ class _HomePageState extends State<HomePage> {
       contentBackgroundColor: Colors.white,
       deviceIdentifierStyle: TextStyle(color: Colors.black),
       deviceNameStyle: TextStyle(color: Colors.black),
+      deviceIconBackgroundColor: Colors.grey[200],
     );
 
     if (device == null) return;
