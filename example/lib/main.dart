@@ -79,7 +79,14 @@ class _HomePageState extends State<HomePage> {
     // Use the new device selector dialog
     final device = await OmronDeviceSelectorDialog.show(
       context,
-      title: 'Select Omron Device',
+      title: const Text('Select Omron Device'),
+      closeIcon: const Icon(Icons.cancel),
+      backgroundColor: Colors.white,
+      categorySubtitleStyle: TextStyle(color: Colors.green),
+      categoryTitleStyle: TextStyle(color: Colors.red),
+      contentBackgroundColor: Colors.white,
+      deviceIdentifierStyle: TextStyle(color: Colors.black),
+      deviceNameStyle: TextStyle(color: Colors.black),
     );
 
     if (device == null) return;

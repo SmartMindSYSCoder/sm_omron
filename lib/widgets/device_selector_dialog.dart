@@ -26,8 +26,35 @@ class OmronDeviceSelectorDialog extends StatefulWidget {
   /// Filter devices by category (null = show all).
   final DeviceCategory? categoryFilter;
 
-  /// Custom title for the dialog.
-  final String? title;
+  /// Custom title widget for the dialog.
+  final Widget? title;
+
+  /// Custom close icon widget.
+  final Widget? closeIcon;
+
+  /// Background color for the dialog/sheet.
+  final Color? backgroundColor;
+
+  /// Background color for the content (list) area.
+  final Color? contentBackgroundColor;
+
+  /// Style for device name text.
+  final TextStyle? deviceNameStyle;
+
+  /// Style for device identifier text.
+  final TextStyle? deviceIdentifierStyle;
+
+  /// Style for category title text (in grouped view).
+  final TextStyle? categoryTitleStyle;
+
+  /// Style for category subtitle text (in grouped view).
+  final TextStyle? categorySubtitleStyle;
+
+  /// Color for category icons.
+  final Color? categoryIconColor;
+
+  /// Background color for category icons container.
+  final Color? categoryIconBackgroundColor;
 
   /// Custom item builder for full customization.
   final Widget Function(BuildContext, DeviceModel)? itemBuilder;
@@ -48,6 +75,15 @@ class OmronDeviceSelectorDialog extends StatefulWidget {
     super.key,
     this.categoryFilter,
     this.title,
+    this.closeIcon,
+    this.backgroundColor,
+    this.contentBackgroundColor,
+    this.deviceNameStyle,
+    this.deviceIdentifierStyle,
+    this.categoryTitleStyle,
+    this.categorySubtitleStyle,
+    this.categoryIconColor,
+    this.categoryIconBackgroundColor,
     this.itemBuilder,
     this.onDeviceSelected,
     this.loadingWidget,
@@ -61,7 +97,16 @@ class OmronDeviceSelectorDialog extends StatefulWidget {
   static Future<DeviceModel?> show(
     BuildContext context, {
     DeviceCategory? categoryFilter,
-    String? title,
+    Widget? title,
+    Widget? closeIcon,
+    Color? backgroundColor,
+    Color? contentBackgroundColor,
+    TextStyle? deviceNameStyle,
+    TextStyle? deviceIdentifierStyle,
+    TextStyle? categoryTitleStyle,
+    TextStyle? categorySubtitleStyle,
+    Color? categoryIconColor,
+    Color? categoryIconBackgroundColor,
     Widget Function(BuildContext, DeviceModel)? itemBuilder,
     bool groupByCategory = true,
   }) {
@@ -69,11 +114,22 @@ class OmronDeviceSelectorDialog extends StatefulWidget {
       context: context,
       builder: (context) => Dialog(
         clipBehavior: Clip.antiAlias,
+        backgroundColor: backgroundColor,
+        surfaceTintColor: backgroundColor, // Uniform color for M3
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxHeight: 500, maxWidth: 400),
           child: OmronDeviceSelectorDialog(
             categoryFilter: categoryFilter,
             title: title,
+            closeIcon: closeIcon,
+            backgroundColor: backgroundColor,
+            contentBackgroundColor: contentBackgroundColor,
+            deviceNameStyle: deviceNameStyle,
+            deviceIdentifierStyle: deviceIdentifierStyle,
+            categoryTitleStyle: categoryTitleStyle,
+            categorySubtitleStyle: categorySubtitleStyle,
+            categoryIconColor: categoryIconColor,
+            categoryIconBackgroundColor: categoryIconBackgroundColor,
             itemBuilder: itemBuilder,
             groupByCategory: groupByCategory,
             onDeviceSelected: (device) => Navigator.of(context).pop(device),
@@ -89,13 +145,23 @@ class OmronDeviceSelectorDialog extends StatefulWidget {
   static Future<DeviceModel?> showAsBottomSheet(
     BuildContext context, {
     DeviceCategory? categoryFilter,
-    String? title,
+    Widget? title,
+    Widget? closeIcon,
+    Color? backgroundColor,
+    Color? contentBackgroundColor,
+    TextStyle? deviceNameStyle,
+    TextStyle? deviceIdentifierStyle,
+    TextStyle? categoryTitleStyle,
+    TextStyle? categorySubtitleStyle,
+    Color? categoryIconColor,
+    Color? categoryIconBackgroundColor,
     Widget Function(BuildContext, DeviceModel)? itemBuilder,
     bool groupByCategory = true,
   }) {
     return showModalBottomSheet<DeviceModel>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: backgroundColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -107,6 +173,15 @@ class OmronDeviceSelectorDialog extends StatefulWidget {
         builder: (context, scrollController) => OmronDeviceSelectorDialog(
           categoryFilter: categoryFilter,
           title: title,
+          closeIcon: closeIcon,
+          backgroundColor: backgroundColor,
+          contentBackgroundColor: contentBackgroundColor,
+          deviceNameStyle: deviceNameStyle,
+          deviceIdentifierStyle: deviceIdentifierStyle,
+          categoryTitleStyle: categoryTitleStyle,
+          categorySubtitleStyle: categorySubtitleStyle,
+          categoryIconColor: categoryIconColor,
+          categoryIconBackgroundColor: categoryIconBackgroundColor,
           itemBuilder: itemBuilder,
           groupByCategory: groupByCategory,
           onDeviceSelected: (device) => Navigator.of(context).pop(device),
@@ -142,22 +217,27 @@ class _OmronDeviceSelectorDialogState extends State<OmronDeviceSelectorDialog> {
         _isLoading = false;
       });
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _buildHeader(),
-        const Divider(height: 1),
-        Flexible(child: _buildContent()),
-      ],
+    return Container(
+      color: widget.backgroundColor,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildHeader(),
+          const Divider(height: 1),
+          Flexible(child: _buildContent()),
+        ],
+      ),
     );
   }
 
@@ -167,13 +247,14 @@ class _OmronDeviceSelectorDialogState extends State<OmronDeviceSelectorDialog> {
       child: Row(
         children: [
           Expanded(
-            child: Text(
-              widget.title ?? 'Select Omron Device',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            child: widget.title ??
+                Text(
+                  'Select Omron Device',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
           ),
           IconButton(
-            icon: const Icon(Icons.close),
+            icon: widget.closeIcon ?? const Icon(Icons.close),
             onPressed: () => Navigator.of(context).pop(),
           ),
         ],
@@ -224,11 +305,12 @@ class _OmronDeviceSelectorDialogState extends State<OmronDeviceSelectorDialog> {
           );
     }
 
-    if (widget.groupByCategory && widget.categoryFilter == null) {
-      return _buildGroupedList();
-    }
-
-    return _buildFlatList();
+    return Container(
+      color: widget.contentBackgroundColor,
+      child: (widget.groupByCategory && widget.categoryFilter == null)
+          ? _buildGroupedList()
+          : _buildFlatList(),
+    );
   }
 
   Widget _buildFlatList() {
@@ -261,6 +343,8 @@ class _OmronDeviceSelectorDialogState extends State<OmronDeviceSelectorDialog> {
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
           elevation: 0,
+          color: widget.contentBackgroundColor ??
+              Theme.of(context).colorScheme.surfaceContainerLow,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
             side: BorderSide(
@@ -268,38 +352,48 @@ class _OmronDeviceSelectorDialogState extends State<OmronDeviceSelectorDialog> {
             ),
           ),
           clipBehavior: Clip.antiAlias,
-          child: ExpansionTile(
-            shape: const Border(), // Remove default border
-            collapsedShape: const Border(),
-            backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
-            collapsedBackgroundColor: Theme.of(context).colorScheme.surface,
-            leading: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: _getCategoryColor(category).withAlpha(30),
-                borderRadius: BorderRadius.circular(8),
+          child: Theme(
+            // Remove divider line when expanded
+            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+            child: ExpansionTile(
+              shape: const Border(), // Remove default border
+              collapsedShape: const Border(),
+              backgroundColor: widget.contentBackgroundColor ??
+                  Theme.of(context).colorScheme.surfaceContainerLow,
+              collapsedBackgroundColor: widget.contentBackgroundColor ??
+                  Theme.of(context).colorScheme.surface,
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: widget.categoryIconBackgroundColor ??
+                      _getCategoryColor(category).withAlpha(30),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  _getCategoryIcon(category),
+                  color:
+                      widget.categoryIconColor ?? _getCategoryColor(category),
+                  size: 24,
+                ),
               ),
-              child: Icon(
-                _getCategoryIcon(category),
-                color: _getCategoryColor(category),
-                size: 24,
+              title: Text(
+                category.displayName,
+                style: widget.categoryTitleStyle ??
+                    const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
               ),
+              subtitle: Text(
+                '${devices.length} devices',
+                style: widget.categorySubtitleStyle ??
+                    TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+              initiallyExpanded: index == 0, // Expand first item by default
+              children: devices.map((d) => _buildDeviceItem(d)).toList(),
             ),
-            title: Text(
-              category.displayName,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-            subtitle: Text(
-              '${devices.length} devices',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-            initiallyExpanded: index == 0, // Expand first item by default
-            children: devices.map((d) => _buildDeviceItem(d)).toList(),
           ),
         );
       },
@@ -333,14 +427,16 @@ class _OmronDeviceSelectorDialogState extends State<OmronDeviceSelectorDialog> {
           ),
           title: Text(
             device.modelDisplayName ?? device.modelName ?? 'Unknown',
-            style: const TextStyle(fontWeight: FontWeight.w500),
+            style: widget.deviceNameStyle ??
+                const TextStyle(fontWeight: FontWeight.w500),
           ),
           subtitle: Text(
             device.identifier ?? '',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.outline,
-              fontSize: 12,
-            ),
+            style: widget.deviceIdentifierStyle ??
+                TextStyle(
+                  color: Theme.of(context).colorScheme.outline,
+                  fontSize: 12,
+                ),
           ),
           trailing: Icon(
             Icons.chevron_right,
