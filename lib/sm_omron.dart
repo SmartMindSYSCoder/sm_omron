@@ -38,6 +38,7 @@ class SMOmron {
 
   // Stream controller for connection state
   StreamController<OmronConnectionState>? _connectionStateController;
+  StreamSubscription? _eventChannelSubscription;
 
   SMOmron() {
     // Initialize GetStorage if not already initialized
@@ -337,7 +338,10 @@ class SMOmron {
     _connectionStateController ??=
         StreamController<OmronConnectionState>.broadcast();
 
-    _statusEventChannel.receiveBroadcastStream().listen((event) {
+    // Cancel existing subscription if any to avoid duplicates
+    _eventChannelSubscription?.cancel();
+    _eventChannelSubscription =
+        _statusEventChannel.receiveBroadcastStream().listen((event) {
       if (event is Map && event.containsKey('state')) {
         final stateIndex = event['state'] as int;
         if (stateIndex >= 0 &&
@@ -353,6 +357,8 @@ class SMOmron {
 
   /// Dispose of resources.
   void dispose() {
+    _eventChannelSubscription?.cancel();
+    _eventChannelSubscription = null;
     _connectionStateController?.close();
     _connectionStateController = null;
   }
