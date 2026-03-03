@@ -152,6 +152,8 @@ class SMOmron {
 
     if (scanData is String && scanData.contains("modelName")) {
       var scannedDevice = ScannedDevice.fromJson(jsonDecode(scanData));
+      scannedDevice.modelName =
+          device.modelName; // Use human-readable name from the selection
       scannedDevice.category = device.category;
       scannedDevice.deviceGroupIncludedGroupIDKey =
           device.deviceGroupIncludedGroupIdKey;

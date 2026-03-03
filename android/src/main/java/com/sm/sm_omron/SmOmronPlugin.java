@@ -187,9 +187,23 @@ public class SmOmronPlugin implements FlutterPlugin, MethodCallHandler, Activity
             return;
         }
 
-        OmronPeripheral peripheral = new OmronPeripheral(localName, uuid);
-        // Remove invalid setters. We now handle configuration in ConnectDevice.
-        
+        // Try to find the peripheral in the scanned list first
+        OmronPeripheral peripheral = null;
+        if (OmronManager.mPeripheralList != null) {
+            for (OmronPeripheral p : OmronManager.mPeripheralList) {
+                if (p.getUuid() != null && p.getUuid().equalsIgnoreCase(uuid)) {
+                    peripheral = p;
+                    Log.d("SmOmronPlugin", "Found peripheral in scanned list for UUID: " + uuid);
+                    break;
+                }
+            }
+        }
+
+        if (peripheral == null) {
+            Log.d("SmOmronPlugin", "Peripheral not in list, creating new for UUID: " + uuid);
+            peripheral = new OmronPeripheral(localName, uuid);
+        }
+
         // Pass the full arguments map        
         // Use updated ConnectDevice which handles the result
         ConnectDevice connectDevice = new ConnectDevice(applicationContext, peripheral, args, result);

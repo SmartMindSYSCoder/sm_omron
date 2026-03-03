@@ -6,6 +6,8 @@ import static com.sm.sm_omron.OmronManager.mSelectedPeripheral;
 import android.os.Handler;
 import android.util.Log;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 
@@ -59,20 +61,14 @@ public class ConnectDevice  {
             if (deviceConfig.get("category") != null) {
                 filterDevice.put(OmronConstants.OMRONBLEConfigDevice.Category, String.valueOf(deviceConfig.get("category")));
             }
-            // Add other necessary keys if needed, assuming these match OmronConstants
             
             if (!filterDevice.isEmpty()) {
                 List<HashMap<String, String>> filterDevices = new ArrayList<>();
                 filterDevices.add(filterDevice);
                 peripheralConfig.deviceFilters = filterDevices;
                 
-                // Create a FRESH deviceSettings list to avoid stale state
                 ArrayList<HashMap> deviceSettings = new ArrayList<>();
 
-                if (peripheralConfig.deviceSettings == null) {
-                    // peripheralConfig.deviceSettings = new ArrayList<>(); // This line is no longer needed as deviceSettings is declared above
-                }
-                
                 // Add category-specific settings to satisfy SDK requirements
                 if (deviceConfig.get("category") != null) {
                     try {
@@ -80,8 +76,7 @@ public class ConnectDevice  {
                         
                         // Blood Pressure Settings
                         if (category == OmronConstants.OMRONBLEDeviceCategory.BLOODPRESSURE) {
-                            // Add default BP settings
-                             HashMap<String, Object> bloodPressurePersonalSettings = new HashMap<>();
+                            HashMap<String, Object> bloodPressurePersonalSettings = new HashMap<>();
                             bloodPressurePersonalSettings.put(OmronConstants.OMRONDevicePersonalSettings.BloodPressureTruReadEnableKey, OmronConstants.OMRONDevicePersonalSettingsBloodPressureTruReadStatus.On);
                             bloodPressurePersonalSettings.put(OmronConstants.OMRONDevicePersonalSettings.BloodPressureTruReadIntervalKey, OmronConstants.OMRONDevicePersonalSettingsBloodPressureTruReadInterval.Interval30);
                             HashMap<String, Object> settings = new HashMap<>();
@@ -91,10 +86,8 @@ public class ConnectDevice  {
                             personalSettings.put(OmronConstants.OMRONDevicePersonalSettingsKey, settings);
                             deviceSettings.add(personalSettings);
                             
-                            // Add Transfer Scan Settings (Pairing Mode)
                             HashMap<String, Object> transferModeSettings = new HashMap<>();
                             HashMap<String, HashMap> transferSettings = new HashMap<>();
-                            // Explicit pairing mode
                             transferModeSettings.put(OmronConstants.OMRONDeviceScanSettings.ModeKey, OmronConstants.OMRONDeviceScanSettingsMode.Pairing);
                             transferSettings.put(OmronConstants.OMRONDeviceScanSettingsKey, transferModeSettings);
                             deviceSettings.add(transferSettings);
@@ -104,19 +97,15 @@ public class ConnectDevice  {
                     }
                 }
                 
-                // Assign the fresh settings list
                 peripheralConfig.deviceSettings = deviceSettings;
 
-                // Set other mandatory fields
                 if (peripheralConfig.timeoutInterval == 0) {
-                     peripheralConfig.timeoutInterval = 30; // Default timeout
+                     peripheralConfig.timeoutInterval = 30;
                 }
 
-                // Sequence Numbers (Mandatory for some flows)
                 if (peripheralConfig.sequenceNumbersForTransfer == null) {
                     peripheralConfig.sequenceNumbersForTransfer = new HashMap<>();
                 }
-                // Ensure at least basic keys exist
                 if (!peripheralConfig.sequenceNumbersForTransfer.containsKey(1)) {
                     peripheralConfig.sequenceNumbersForTransfer.put(1, 0);
                 }
@@ -124,41 +113,52 @@ public class ConnectDevice  {
                     peripheralConfig.sequenceNumbersForTransfer.put(2, 0);
                 }
 
-                // Apply configuration and start manager
+                peripheralConfig.userHashId = "user@example.com"; // Mandatory field
+
+
                 OmronPeripheralManager.sharedManager(applicationContext).setConfiguration(peripheralConfig);
                 OmronPeripheralManager.sharedManager(applicationContext).startManager();
 
-                // Explicitly force pairing using native Android Bluetooth API
-                // This ensures the system pairing dialog is shown
-                BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-                if (bluetoothAdapter != null) {
-                    BluetoothDevice device = bluetoothAdapter.getRemoteDevice(omronPeripheral.getUuid());
-                    if (device != null) {
-                        if (device.getBondState() == BluetoothDevice.BOND_BONDED) {
-                            Log.d("ConnectDevice", "Device already bonded: " + omronPeripheral.getUuid());
-                            result.success(true);
-                        } else {
-                            Log.d("ConnectDevice", "Creating bond for: " + omronPeripheral.getUuid());
-                            boolean success = device.createBond();
-                             if (success) {
-                                // Result will be handled by SDK broadcast listener eventually, 
-                                // but for now we return true as the process initiated successfully.
-                                result.success(true);
-                            } else {
-                                Log.e("ConnectDevice", "Failed to create bond (createBond returned false)");
-                                result.error("PAIRING_FAILED", "Failed to initiate pairing", null);
-                            }
-                        }
-                    } else {
-                         result.error("DEVICE_NOT_FOUND", "BluetoothDevice is null", null);
-                    }
-                } else {
-                    result.error("BLUETOOTH_UNAVAILABLE", "BluetoothAdapter is null", null);
-                }
+                performOmronHandshake();
             }
         } catch (Exception e) {
              Log.e("ConnectDevice", "Unexpected error in bonding: " + e.getMessage());
-             result.success(false); // Or error
+             result.error("UNEXPECTED_ERROR", e.getMessage(), null);
         }
+    }
+
+
+    private void performOmronHandshake() {
+        Log.d("ConnectDevice", "Performing Omron SDK handshake for: " + omronPeripheral.getLocalName());
+        
+        OmronPeripheralManager.sharedManager(applicationContext).connectPeripheral(omronPeripheral, new OmronPeripheralManagerConnectListener() {
+            @Override
+            public void onConnectCompleted(final OmronPeripheral peripheral, OmronErrorInfo errorInfo) {
+                if (errorInfo.isSuccess()) {
+                    Log.d("ConnectDevice", "Omron SDK Handshake Successful. Device should now show OK. Disconnecting...");
+                    
+                    // Explicitly disconnect after handshake to release the device
+                    OmronPeripheralManager.sharedManager(applicationContext).disconnectPeripheral(peripheral, new com.omronhealthcare.OmronConnectivityLibrary.OmronLibrary.Interface.OmronPeripheralManagerDisconnectListener() {
+                        @Override
+                        public void onDisconnectCompleted(OmronPeripheral p, OmronErrorInfo e) {
+                            Log.d("ConnectDevice", "Disconnected after handshake.");
+                            // Return success to Flutter only after disconnection is initiated
+                            if (!result.getClass().getName().contains("ErrorResult")) {
+                               try {
+                                   result.success(true);
+                               } catch (Exception ex) {
+                                   Log.e("ConnectDevice", "Error returning result: " + ex.getMessage());
+                               }
+                            }
+                        }
+                    });
+                } else {
+                    Log.e("ConnectDevice", "Omron SDK Handshake Failed: " + errorInfo.getMessageInfo());
+                    // Even if handshake fails, the bond might be established. 
+                    // However, we report error to let Flutter know pairing didn't fully complete.
+                    result.error("HANDSHAKE_FAILED", errorInfo.getMessageInfo(), errorInfo.getDetailInfo());
+                }
+            }
+        });
     }
 }

@@ -45,9 +45,11 @@ public class AutoTransferData  {
     public AutoTransferData(MethodChannel.Result result, Context context) {
         this.result = result;
         this.applicationContext=context;
+        Log.d("AutoTransferData", "Initialized AutoTransferData");
     }
 
     void initializeFun(  String localName,String uuid ,int category ) {
+      Log.d("AutoTransferData", "initializeFun: localName=" + localName + ", uuid=" + uuid + ", category=" + category);
 
 //        this.map=map;
 
@@ -73,7 +75,15 @@ public class AutoTransferData  {
              Log.d("category", "************************ categoty = "+category);
 
             startOmronPeripheralManager(true, false,applicationContext);
-            performDataTransfer();
+            
+            // Add delay to allow Manager to initialize state before transfer
+            // Increased to 2 seconds to ensure SDK is ready after pairing
+            new Handler(android.os.Looper.getMainLooper()).postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    performDataTransfer();
+                }
+            }, 2000);
 
         }
     }
@@ -254,6 +264,9 @@ private  void  stopRecording(){
 
                 }
                 else {
+                    Log.e("AutoTransferData", "Data transfer failed. ResultCode: " + resultInfo.getResultCode() + 
+                          ", Detail: " + resultInfo.getDetailInfo() + 
+                          ", Message: " + resultInfo.getMessageInfo());
 
 //                    runOnUiThread(new Runnable() {
 //                        @Override
@@ -265,7 +278,7 @@ private  void  stopRecording(){
 //
 //                        }
 //                    });
-                    result.error("0", "Device Scan time out", "error in transfer data");
+                    result.error(String.valueOf(resultInfo.getResultCode()), resultInfo.getMessageInfo(), resultInfo.getDetailInfo());
 
                 }
             }
@@ -342,6 +355,9 @@ private  void  stopRecording(){
                     }
 
                 } else {
+                    Log.e("AutoTransferData", "Users Data transfer failed. ResultCode: " + resultInfo.getResultCode() + 
+                          ", Detail: " + resultInfo.getDetailInfo() + 
+                          ", Message: " + resultInfo.getMessageInfo());
 
 //                    runOnUiThread(new Runnable() {
 //                        @Override
@@ -355,10 +371,10 @@ private  void  stopRecording(){
 //                                mHandler.removeCallbacks(mRunnable);
 //
 //
-////                            enableDisableButton(true);
+//                            enableDisableButton(true);
 //                        }
 //                    });
-                    result.error("0", "Device Scan time out", "error in transfer data");
+                    result.error(String.valueOf(resultInfo.getResultCode()), resultInfo.getMessageInfo(), resultInfo.getDetailInfo());
 
                 }
             }

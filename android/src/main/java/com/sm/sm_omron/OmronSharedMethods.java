@@ -63,9 +63,11 @@ public class OmronSharedMethods {
 
         // Pass the last sequence number of reading  tracked by app - "SequenceKey" for each vital data
         HashMap<Integer, Integer> sequenceNumbersForTransfer = new HashMap<>();
-        sequenceNumbersForTransfer.put(1, 42);
-        sequenceNumbersForTransfer.put(2, 8);
+        sequenceNumbersForTransfer.put(1, 0);
+        sequenceNumbersForTransfer.put(2, 0);
         peripheralConfig.sequenceNumbersForTransfer = sequenceNumbersForTransfer;
+        
+        Log.d("OmronSharedMethods", "Configured sequenceNumbersForTransfer: {1:0, 2:0}");
 
         // Set configuration for OmronPeripheralManager
         OmronPeripheralManager.sharedManager(context).setConfiguration(peripheralConfig);
