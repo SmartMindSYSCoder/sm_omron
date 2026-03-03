@@ -513,6 +513,7 @@ class SMOmron {
           type: VitalType.pulseOximeter,
           measurementDate: _parseDate(json['measurementDate']),
           userId: json['userId'] as int?,
+          sequenceNumber: json['sequenceNumber'] as int?,
           spo2Level: json['spo2Level'] as int?,
           pulseOximeterRate: json['pulseOximeterRate'] as int?,
           rawData: json['rawData'],
