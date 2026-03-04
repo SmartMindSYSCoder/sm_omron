@@ -14,6 +14,7 @@ import java.util.Map;
 public class OmronManager {
 
 
+    static String omronApiKey = null;
     static HashMap<String, String> device = null;
     static HashMap<String, String> personalSettings = null;
     static Boolean isScan = false;

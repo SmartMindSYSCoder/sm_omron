@@ -47,7 +47,11 @@ public class DevicesList {
     void initializeFun(MethodChannel.Result result) {
         this.result = result;
 //       fullDeviceList = new ArrayList<HashMap<String, String>>();
-        OmronPeripheralManager.sharedManager(activity).setAPIKey("F8C4D353-1309-41A4-A190-34C1101CC43D", null);
+        if (OmronManager.omronApiKey != null) {
+            OmronPeripheralManager.sharedManager(activity).setAPIKey(OmronManager.omronApiKey, null);
+        } else {
+            Log.e("DevicesList", "Omron API Key is missing! Please call SMOmron.initialize(apiKey: '...') or setApiKey('...') before scanning.");
+        }
         // Notification Listener for Configuration Availability
         LocalBroadcastManager.getInstance(activity).registerReceiver(mMessageReceiver,
                 new IntentFilter(OmronConstants.OMRONBLEConfigDeviceAvailabilityNotification));

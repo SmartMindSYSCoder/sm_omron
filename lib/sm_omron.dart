@@ -45,8 +45,21 @@ class SMOmron {
   }
 
   /// Initialize the plugin dependencies.
-  Future<void> initialize() async {
+  ///
+  /// Optionally providing an [apiKey] will initialize the Omron SDK immediately.
+  Future<void> initialize({String? apiKey}) async {
     await GetStorage.init();
+    if (apiKey != null) {
+      await setApiKey(apiKey);
+    }
+  }
+
+  /// Set the Omron SDK API Key.
+  ///
+  /// This must be called before scanning or transferring data if not
+  /// provided during [initialize].
+  Future<void> setApiKey(String apiKey) async {
+    await _methodChannel.invokeMethod('setApiKey', {'apiKey': apiKey});
   }
 
   // ============================================================

@@ -131,6 +131,10 @@ public class SmOmronPlugin implements FlutterPlugin, MethodCallHandler, Activity
                 handleWeight(call, result);
                 break;
 
+            case "setApiKey":
+                handleSetApiKey(call, result);
+                break;
+
             default:
                 result.notImplemented();
         }
@@ -148,6 +152,17 @@ public class SmOmronPlugin implements FlutterPlugin, MethodCallHandler, Activity
     private void handleCheckRecordPermissions(Result result) {
         permissionHelper.checkRecordAudioPermission();
         result.success(true);
+    }
+
+    private void handleSetApiKey(MethodCall call, Result result) {
+        String apiKey = call.argument("apiKey");
+        if (apiKey != null) {
+            OmronManager.omronApiKey = apiKey;
+            Log.d(TAG, "Omron API Key set successfully");
+            result.success(true);
+        } else {
+            result.error("INVALID_ARGUMENTS", "apiKey is required", null);
+        }
     }
 
     private void handleGetDevicesList(Result result) {

@@ -32,6 +32,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  static const String _kApiKey = 'F8C4D353-1309-41A4-A190-34C1101CC43D';
   final _smOmron = SMOmron();
 
   List<ScannedDevice> savedDevices = [];
@@ -46,7 +47,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _initPlugin() async {
-    await _smOmron.initialize();
+    await _smOmron.initialize(apiKey: _kApiKey);
     // Listen to connection state changes
     _stateSubscription = _smOmron.connectionStateStream.listen((state) {
       if (mounted) {
