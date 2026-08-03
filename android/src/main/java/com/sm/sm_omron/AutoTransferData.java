@@ -10,6 +10,8 @@ import static com.sm.sm_omron.OmronSharedMethods.startOmronPeripheralManager;
 import static com.sm.sm_omron.OmronManager.device;
 
 import android.app.Activity;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.os.Handler;
 import android.util.Log;
 import android.content.Context;
@@ -39,7 +41,10 @@ public class AutoTransferData  {
     final int TIME_INTERVAL = 1000;
 //    HashMap<String, Object> map;
 
-    private final   Context applicationContext;
+    private final Context applicationContext;
+    private int retryCount = 0;
+    private static final int MAX_RETRIES = 2;
+    private int savedCategory = -1;
 
 
     public AutoTransferData(MethodChannel.Result result, Context context) {
@@ -48,45 +53,51 @@ public class AutoTransferData  {
         Log.d("AutoTransferData", "Initialized AutoTransferData");
     }
 
-    void initializeFun(  String localName,String uuid ,int category ) {
-      Log.d("AutoTransferData", "initializeFun: localName=" + localName + ", uuid=" + uuid + ", category=" + category);
+    void initializeFun(  String localName,String uuid ,int category, List<Integer> userIds ) {
+      Log.d("AutoTransferData", "initializeFun: localName=" + localName + ", uuid=" + uuid + ", category=" + category + ", userIds=" + userIds);
+      retryCount = 0;
+      savedCategory = category;
 
-//        this.map=map;
+        if (OmronManager.mSelectedPeripheral != null && 
+            uuid != null && 
+            OmronManager.mSelectedPeripheral.getUuid() != null && 
+            OmronManager.mSelectedPeripheral.getUuid().equalsIgnoreCase(uuid)) {
+            mSelectedPeripheral = OmronManager.mSelectedPeripheral;
+            Log.d("AutoTransferData", "Using cached OmronManager.mSelectedPeripheral for UUID: " + uuid);
+        } else {
+            mSelectedPeripheral = new OmronPeripheral(localName, uuid);
+        }
 
-      //  Log.d("map ****** "," **********  from init "+map.toString());
-         mSelectedPeripheral = new OmronPeripheral(localName, uuid);
-
-//mSelectedPeripheral=peripheralLocal;
-
-        selectedUsers.add(1);
-
+        // Clear to prevent accumulation across successive calls
+        selectedUsers.clear();
+        if (userIds != null && !userIds.isEmpty()) {
+            selectedUsers.addAll(userIds);
+        } else {
+            selectedUsers.add(1);
+        }
 
         if (mSelectedPeripheral.getUuid() == null || mSelectedPeripheral.getLocalName() == null) {
             Log.d("message", "Device Not Paired");
             return;
         }
 
-        // Disclaimer: Read definition before usage
-        if (category == OmronConstants.OMRONBLEDeviceCategory.ACTIVITY || category == OmronConstants.OMRONBLEDeviceCategory.PULSEOXIMETER) {
-            startOmronPeripheralManager(false, false,applicationContext);
-           // Log.d("message", "Device Not sssss");
-            performDataTransfer();
-        } else {
-             Log.d("category", "************************ categoty = "+category);
-
-            startOmronPeripheralManager(true, false,applicationContext);
-            
-            // Add delay to allow Manager to initialize state before transfer
-            // Increased to 2 seconds to ensure SDK is ready after pairing
-            new Handler(android.os.Looper.getMainLooper()).postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    performDataTransfer();
-                }
-            }, 2000);
-
-        }
+        initManagerAndTransfer();
     }
+
+    /**
+     * Initialize the OmronPeripheralManager and start data transfer.
+     * This is also called on retries to re-establish SDK configuration.
+     */
+    private void initManagerAndTransfer() {
+        if (savedCategory == OmronConstants.OMRONBLEDeviceCategory.ACTIVITY || savedCategory == OmronConstants.OMRONBLEDeviceCategory.PULSEOXIMETER) {
+            startOmronPeripheralManager(false, false, applicationContext);
+        } else {
+            Log.d("category", "************************ category = " + savedCategory);
+            startOmronPeripheralManager(true, false, applicationContext);
+        }
+        performDataTransfer();
+    }
+
 
     private void performDataTransfer() {
 
@@ -254,11 +265,22 @@ private  void  stopRecording(){
                         disconnectDevice();
 
                     } else {
-
                         HashMap<String, Object> vitalData = (HashMap<String, Object>) output;
 
                         if (vitalData != null) {
-                            uploadData(vitalData, peripheral, true);
+                            Log.d("AutoTransferData", "Vital data retrieved. Calling endDataTransferFromPeripheral to stop device loop...");
+                            try {
+                                OmronPeripheralManager.sharedManager(applicationContext).endDataTransferFromPeripheral(new OmronPeripheralManagerDataTransferListener() {
+                                    @Override
+                                    public void onDataTransferCompleted(OmronPeripheral p, OmronErrorInfo errorInfo) {
+                                        Log.d("AutoTransferData", "endDataTransferFromPeripheral completed: " + (errorInfo != null ? errorInfo.getMessageInfo() : "success"));
+                                        uploadData(vitalData, peripheral, true);
+                                    }
+                                });
+                            } catch (Exception e) {
+                                Log.e("AutoTransferData", "Error in endDataTransferFromPeripheral: " + e.getMessage());
+                                uploadData(vitalData, peripheral, true);
+                            }
                         }
                     }
 
@@ -287,20 +309,30 @@ private  void  stopRecording(){
 
 
     private void disconnectDevice() {
-
-        // Disconnect device using OmronPeripheralManager
-        OmronPeripheralManager.sharedManager(applicationContext).disconnectPeripheral(mSelectedPeripheral, new OmronPeripheralManagerDisconnectListener() {
-            @Override
-            public void onDisconnectCompleted(OmronPeripheral peripheral, OmronErrorInfo resultInfo) {
-//                runOnUiThread(new Runnable() {
-//                    @Override
-//                    public void run() {
-////                        Toast.makeText(MainActivity.this, "Device disconnected", Toast.LENGTH_SHORT).show();
-//
-//                    }
-//                });
+        Log.d("AutoTransferData", "disconnectDevice called - stopping manager and releasing peripheral");
+        try {
+            if (mSelectedPeripheral != null) {
+                OmronPeripheralManager.sharedManager(applicationContext).disconnectPeripheral(mSelectedPeripheral, new OmronPeripheralManagerDisconnectListener() {
+                    @Override
+                    public void onDisconnectCompleted(OmronPeripheral peripheral, OmronErrorInfo resultInfo) {
+                        Log.d("AutoTransferData", "Device disconnected successfully");
+                        try {
+                            OmronPeripheralManager.sharedManager(applicationContext).stopManager();
+                        } catch (Exception e) {
+                            Log.e("AutoTransferData", "Error stopping manager in disconnect callback: " + e.getMessage());
+                        }
+                    }
+                });
             }
-        });
+        } catch (Exception e) {
+            Log.e("AutoTransferData", "Error disconnecting peripheral: " + e.getMessage());
+        }
+
+        try {
+            OmronPeripheralManager.sharedManager(applicationContext).stopManager();
+        } catch (Exception e) {
+            Log.e("AutoTransferData", "Error calling stopManager: " + e.getMessage());
+        }
     }
 
     // Data transfer with multiple users
@@ -346,11 +378,22 @@ private  void  stopRecording(){
                         disconnectDevice();
 
                     } else {
-
                         HashMap<String, Object> vitalData = (HashMap<String, Object>) output;
 
                         if (vitalData != null) {
-                            uploadData(vitalData, peripheral, true);
+                            Log.d("AutoTransferData", "Vital data retrieved. Calling endDataTransferFromPeripheral to stop device loop...");
+                            try {
+                                OmronPeripheralManager.sharedManager(applicationContext).endDataTransferFromPeripheral(new OmronPeripheralManagerDataTransferListener() {
+                                    @Override
+                                    public void onDataTransferCompleted(OmronPeripheral p, OmronErrorInfo errorInfo) {
+                                        Log.d("AutoTransferData", "endDataTransferFromPeripheral completed: " + (errorInfo != null ? errorInfo.getMessageInfo() : "success"));
+                                        uploadData(vitalData, peripheral, true);
+                                    }
+                                });
+                            } catch (Exception e) {
+                                Log.e("AutoTransferData", "Error in endDataTransferFromPeripheral: " + e.getMessage());
+                                uploadData(vitalData, peripheral, true);
+                            }
                         }
                     }
 
@@ -359,23 +402,21 @@ private  void  stopRecording(){
                           ", Detail: " + resultInfo.getDetailInfo() + 
                           ", Message: " + resultInfo.getMessageInfo());
 
-//                    runOnUiThread(new Runnable() {
-//                        @Override
-//                        public void run() {
-//
-//                         /*   setStatus("-");
-//                            mTvErrorCode.setText(resultInfo.getResultCode() + " / " + resultInfo.getDetailInfo());
-//                            mTvErrorDesc.setText(resultInfo.getMessageInfo());*/
-//
-//                            if (mHandler != null)
-//                                mHandler.removeCallbacks(mRunnable);
-//
-//
-//                            enableDisableButton(true);
-//                        }
-//                    });
-                    result.error(String.valueOf(resultInfo.getResultCode()), resultInfo.getMessageInfo(), resultInfo.getDetailInfo());
-
+                    String detailStr = resultInfo.getDetailInfo();
+                    boolean isRetryable = "6029".equals(detailStr) || "6030".equals(detailStr) || "6019".equals(detailStr);
+                    if (retryCount < MAX_RETRIES && isRetryable) {
+                        retryCount++;
+                        Log.d("AutoTransferData", "Auto-retrying data transfer (attempt " + retryCount + " of " + MAX_RETRIES + ") for detail " + detailStr);
+                        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                // Re-initialize SDK config before retry (prevents 8002 error)
+                                initManagerAndTransfer();
+                            }
+                        }, 2000);
+                    } else {
+                        result.error(String.valueOf(resultInfo.getResultCode()), resultInfo.getMessageInfo(), resultInfo.getDetailInfo());
+                    }
                 }
             }
 

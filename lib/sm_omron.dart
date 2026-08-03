@@ -181,14 +181,21 @@ class SMOmron {
   ///
   /// This establishes the bonding without transferring data.
   /// Call this after scanning and before saving the device.
-  Future<bool> pairBleDevice({required ScannedDevice device}) async {
+  Future<bool> pairBleDevice({
+    required ScannedDevice device,
+    PersonalInfo? personalInfo,
+  }) async {
     // Intercept recording wave device - no pairing needed
     if (device.isRecordingWave) {
       return true;
     }
 
     try {
-      await _methodChannel.invokeMethod('connectToDevice', device.toJson());
+      final json = device.toJson();
+      if (personalInfo != null) {
+        json['personalInfo'] = personalInfo.toJson();
+      }
+      await _methodChannel.invokeMethod('connectToDevice', json);
       return true;
     } catch (e) {
       if (e is PlatformException) {
@@ -251,12 +258,35 @@ class SMOmron {
     if (data is List) {
       for (var e in data) {
         final jsonData = jsonDecode(e) as Map<String, dynamic>;
+        
+        // Single user mode: normalize userId to 1
+        if (options.singleUserMode) {
+          jsonData['userId'] = 1;
+        }
+        
         final result = _parseVitalData(jsonData, device.deviceCategory);
         results.add(result);
       }
+
+      // Sort by measurementDate ascending so results.last is guaranteed to be the most recent reading
+      results.sort((a, b) {
+        if (a.measurementDate == null) return -1;
+        if (b.measurementDate == null) return 1;
+        return a.measurementDate!.compareTo(b.measurementDate!);
+      });
     }
 
     return results;
+  }
+
+  /// Stop Omron Peripheral Manager and disconnect any active connections.
+  Future<bool> stopManager() async {
+    try {
+      final res = await _methodChannel.invokeMethod('stopManager');
+      return res == true;
+    } catch (_) {
+      return false;
+    }
   }
 
   /// Legacy method for backward compatibility.
@@ -368,6 +398,7 @@ class SMOmron {
 
   /// Dispose of resources.
   void dispose() {
+    stopManager();
     _connectionStateController?.close();
     _connectionStateController = null;
   }

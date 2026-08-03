@@ -91,6 +91,60 @@ public class ConnectDevice  {
                             transferModeSettings.put(OmronConstants.OMRONDeviceScanSettings.ModeKey, OmronConstants.OMRONDeviceScanSettingsMode.Pairing);
                             transferSettings.put(OmronConstants.OMRONDeviceScanSettingsKey, transferModeSettings);
                             deviceSettings.add(transferSettings);
+                        } 
+                        // Body Composition / Weight Scale Settings
+                        else if (category == OmronConstants.OMRONBLEDeviceCategory.BODYCOMPOSITION) {
+                            HashMap<String, Object> weightPersonalSettings = new HashMap<>();
+                            int userWeightDCI = 100; // Default DCI
+
+                            String userHeight = "17000"; // Default: 170cm
+                            int userGender = OmronConstants.OMRONDevicePersonalSettingsUserGenderType.Male;
+                            String userDOB = "19001010"; // Default DOB
+
+                            if (OmronManager.personalSettings != null) {
+                                if (OmronManager.personalSettings.get("personalWeight") != null) {
+                                    try {
+                                        userWeightDCI = Integer.parseInt(OmronManager.personalSettings.get("personalWeight"));
+                                    } catch (Exception ignored) {}
+                                }
+                                if (OmronManager.personalSettings.get("personalHeight") != null) {
+                                    userHeight = OmronManager.personalSettings.get("personalHeight");
+                                }
+                                if (OmronManager.personalSettings.get("gender") != null) {
+                                    String gender = OmronManager.personalSettings.get("gender");
+                                    if ("female".equalsIgnoreCase(gender)) {
+                                        userGender = OmronConstants.OMRONDevicePersonalSettingsUserGenderType.Female;
+                                    }
+                                }
+                                if (OmronManager.personalSettings.get("birthdayNum") != null) {
+                                    userDOB = OmronManager.personalSettings.get("birthdayNum");
+                                }
+                            }
+
+                            weightPersonalSettings.put(OmronConstants.OMRONDevicePersonalSettings.WeightDCIKey, userWeightDCI);
+
+                            HashMap<String, Object> settings = new HashMap<>();
+                            settings.put(OmronConstants.OMRONDevicePersonalSettings.UserHeightKey, userHeight);
+                            settings.put(OmronConstants.OMRONDevicePersonalSettings.UserGenderKey, userGender);
+                            settings.put(OmronConstants.OMRONDevicePersonalSettings.UserDateOfBirthKey, userDOB);
+                            settings.put(OmronConstants.OMRONDevicePersonalSettings.WeightKey, weightPersonalSettings);
+
+                            HashMap<String, HashMap> bcmPersonalSettings = new HashMap<>();
+                            bcmPersonalSettings.put(OmronConstants.OMRONDevicePersonalSettingsKey, settings);
+
+                            HashMap<String, Object> weightCommonSettings = new HashMap<>();
+                            weightCommonSettings.put(OmronConstants.OMRONDeviceWeightSettings.UnitKey, OmronConstants.OMRONDeviceWeightUnit.Kg);
+                            HashMap<String, Object> weightSettings = new HashMap<>();
+                            weightSettings.put(OmronConstants.OMRONDeviceWeightSettingsKey, weightCommonSettings);
+
+                            HashMap<String, Object> transferModeSettings = new HashMap<>();
+                            HashMap<String, HashMap> transferSettings = new HashMap<>();
+                            transferModeSettings.put(OmronConstants.OMRONDeviceScanSettings.ModeKey, OmronConstants.OMRONDeviceScanSettingsMode.Pairing);
+                            transferSettings.put(OmronConstants.OMRONDeviceScanSettingsKey, transferModeSettings);
+
+                            deviceSettings.add(bcmPersonalSettings);
+                            deviceSettings.add(weightSettings);
+                            deviceSettings.add(transferSettings);
                         }
                     } catch (Exception e) {
                         Log.e("ConnectDevice", "Error adding device settings: " + e.getMessage());

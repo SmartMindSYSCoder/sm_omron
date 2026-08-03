@@ -2,7 +2,7 @@ package com.sm.sm_omron;
 
 public interface Constants {
     String USER_EMAIl = "useremail@domain.com";
-    int CONNECTION_TIMEOUT = 15;
+    int CONNECTION_TIMEOUT = 60;
 
     public interface extraKeys {
         String KEY_SELECTED_DEVICE = "selectedDevice";

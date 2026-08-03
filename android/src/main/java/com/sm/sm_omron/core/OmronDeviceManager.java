@@ -125,7 +125,7 @@ public class OmronDeviceManager {
 
         // Set timeout and configuration
         config.timeoutInterval = timeoutSeconds;
-        config.userHashId = "<user_hash>";
+        config.userHashId = "user@example.com";
         config.enableAllDataRead = enableAllDataRead;
 
         // Apply configuration

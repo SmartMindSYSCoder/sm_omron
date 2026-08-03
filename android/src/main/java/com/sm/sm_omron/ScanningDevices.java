@@ -241,7 +241,7 @@ public class ScanningDevices  implements EventChannel.StreamHandler {
         // Set Scan timeout interval (optional)
         peripheralConfig.timeoutInterval = Constants.CONNECTION_TIMEOUT;
         // Set User Hash Id (mandatory)
-        peripheralConfig.userHashId = "<email_address_of_user>"; // Set logged in user email
+        peripheralConfig.userHashId = "user@example.com"; // Set logged in user email
 
         // Disclaimer: Read definition before usage
         if (Integer.parseInt(device.get(OmronConstants.OMRONBLEConfigDevice.Category)) != OmronConstants.OMRONBLEDeviceCategory.ACTIVITY) {

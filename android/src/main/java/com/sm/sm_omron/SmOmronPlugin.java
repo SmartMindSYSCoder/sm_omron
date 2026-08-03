@@ -135,8 +135,23 @@ public class SmOmronPlugin implements FlutterPlugin, MethodCallHandler, Activity
                 handleSetApiKey(call, result);
                 break;
 
+            case "stopManager":
+                handleStopManager(result);
+                break;
+
             default:
                 result.notImplemented();
+        }
+    }
+
+    private void handleStopManager(Result result) {
+        try {
+            OmronPeripheralManager.sharedManager(applicationContext).stopManager();
+            Log.d(TAG, "Omron Peripheral Manager stopped successfully");
+            result.success(true);
+        } catch (Exception e) {
+            Log.e(TAG, "Error stopping Omron Peripheral Manager: " + e.getMessage());
+            result.success(false);
         }
     }
 
@@ -202,6 +217,24 @@ public class SmOmronPlugin implements FlutterPlugin, MethodCallHandler, Activity
             return;
         }
 
+        // Extract personal info if provided during connect/pairing
+        Map<String, Object> personalInfoMap = (Map<String, Object>) args.get("personalInfo");
+        if (personalInfoMap != null) {
+            HashMap<String, String> personalSettingsMap = new HashMap<>();
+            if (personalInfoMap.containsKey("heightCm")) {
+                double heightCm = ((Number) personalInfoMap.get("heightCm")).doubleValue();
+                personalSettingsMap.put("personalHeight", String.valueOf((int) (heightCm * 100)));
+            }
+            if (personalInfoMap.containsKey("gender")) {
+                personalSettingsMap.put("gender", (String) personalInfoMap.get("gender"));
+            }
+            if (personalInfoMap.containsKey("birthdayNum")) {
+                personalSettingsMap.put("birthdayNum", (String) personalInfoMap.get("birthdayNum"));
+            }
+            OmronManager.personalSettings = personalSettingsMap;
+            Log.d(TAG, "Connect/Pairing Personal settings set: " + personalSettingsMap.toString());
+        }
+
         // Try to find the peripheral in the scanned list first
         OmronPeripheral peripheral = null;
         if (OmronManager.mPeripheralList != null) {
@@ -245,6 +278,7 @@ public class SmOmronPlugin implements FlutterPlugin, MethodCallHandler, Activity
         List<Integer> userIds = new ArrayList<>();
         userIds.add(1);
         int timeoutSeconds = 30;
+        boolean singleUserMode = false;
 
         if (options != null) {
             if (options.containsKey("readHistoricalData")) {
@@ -256,6 +290,56 @@ public class SmOmronPlugin implements FlutterPlugin, MethodCallHandler, Activity
             if (options.containsKey("timeoutSeconds")) {
                 timeoutSeconds = (int) options.get("timeoutSeconds");
             }
+            if (options.containsKey("singleUserMode")) {
+                singleUserMode = (boolean) options.get("singleUserMode");
+            }
+        }
+
+        // Extract personal info for body composition calculations
+        Map<String, Object> personalInfoMap = (Map<String, Object>) map.get("personalInfo");
+        if (personalInfoMap != null) {
+            HashMap<String, String> personalSettingsMap = new HashMap<>();
+            
+            // Height: Omron SDK expects height in cm * 100 (e.g., 170cm = "17000")
+            if (personalInfoMap.containsKey("heightCm")) {
+                double heightCm = ((Number) personalInfoMap.get("heightCm")).doubleValue();
+                personalSettingsMap.put("personalHeight", String.valueOf((int) (heightCm * 100)));
+            }
+            
+            // Weight in kg
+            if (personalInfoMap.containsKey("weightKg")) {
+                double weightKg = ((Number) personalInfoMap.get("weightKg")).doubleValue();
+                personalSettingsMap.put("personalWeight", String.valueOf((int) (weightKg * 10)));
+            }
+            
+            // Stride in cm
+            if (personalInfoMap.containsKey("strideCm")) {
+                double strideCm = ((Number) personalInfoMap.get("strideCm")).doubleValue();
+                personalSettingsMap.put("personalStride", String.valueOf((int) (strideCm * 10)));
+            }
+            
+            // Gender: "male" or "female"
+            if (personalInfoMap.containsKey("gender")) {
+                personalSettingsMap.put("gender", (String) personalInfoMap.get("gender"));
+            }
+            
+            // Date of birth: formatted as "YYYYMMDD" via birthdayNum
+            if (personalInfoMap.containsKey("birthdayNum")) {
+                personalSettingsMap.put("birthdayNum", (String) personalInfoMap.get("birthdayNum"));
+            }
+            
+            OmronManager.personalSettings = personalSettingsMap;
+            Log.d(TAG, "Personal settings set: " + personalSettingsMap.toString());
+        }
+
+        // Single user mode: fetch all user slots [1, 2, 3, 4] to capture readings regardless of scale weight auto-recognition, then normalize to User 1
+        if (singleUserMode || category == OmronConstants.OMRONBLEDeviceCategory.BODYCOMPOSITION) {
+            userIds = new ArrayList<>();
+            userIds.add(1);
+            userIds.add(2);
+            userIds.add(3);
+            userIds.add(4);
+            Log.d(TAG, "Single user mode: fetching all user slots [1,2,3,4] for body composition");
         }
 
         // Check for temperature device (audio-based)
@@ -276,6 +360,8 @@ public class SmOmronPlugin implements FlutterPlugin, MethodCallHandler, Activity
         // Perform transfer using AutoTransferData
         final int finalCategory = category;
         final boolean finalReadHistoricalData = readHistoricalData;
+        final boolean finalSingleUserMode = singleUserMode;
+        final List<Integer> finalUserIds = userIds;
         
         new AutoTransferData(result, applicationContext) {
             @Override
@@ -290,6 +376,12 @@ public class SmOmronPlugin implements FlutterPlugin, MethodCallHandler, Activity
                     for (HashMap<String, Object> reading : vitalDataList) {
                         Log.d(TAG, "DEBUG: Processing reading: " + reading.toString());
                         Map<String, Object> unifiedResult = parser.parseToUnifiedResult(reading);
+                        
+                        // Single user mode: normalize all results to userId=1
+                        if (finalSingleUserMode) {
+                            unifiedResult.put("userId", 1);
+                        }
+                        
                         Log.d(TAG, "DEBUG: Parsed Unified Result: " + unifiedResult.toString());
                         jsonList.add(gson.toJson(unifiedResult));
                     }
@@ -304,7 +396,7 @@ public class SmOmronPlugin implements FlutterPlugin, MethodCallHandler, Activity
                             .collect(java.util.stream.Collectors.toList()));
                 }
             }
-        }.initializeFun(localName, uuid, category);
+        }.initializeFun(localName, uuid, category, finalUserIds);
     }
 
     private void handleTemperatureRecording(Result result) {

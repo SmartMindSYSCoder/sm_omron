@@ -25,13 +25,30 @@ public class OmronSharedMethods {
         OmronPeripheralManagerConfig peripheralConfig = OmronPeripheralManager.sharedManager(context).getConfiguration();
         Log.d("TAG", "Library Identifier : " + peripheralConfig.getLibraryIdentifier());
 
-        // Filter device to scan and connect (optional)
-        if (device != null && device.get(OmronConstants.OMRONBLEConfigDevice.GroupID) != null && device.get(OmronConstants.OMRONBLEConfigDevice.GroupIncludedGroupID) != null) {
-
-            // Add item
-            List<HashMap<String, String>> filterDevices = new ArrayList<>();
-            filterDevices.add(device);
-            peripheralConfig.deviceFilters = filterDevices;
+        // Filter device to scan and connect
+        if (device != null) {
+            String groupID = device.get(OmronConstants.OMRONBLEConfigDevice.GroupID);
+            if (groupID == null) groupID = device.get("deviceGroupIDKey");
+            
+            String groupIncludedID = device.get(OmronConstants.OMRONBLEConfigDevice.GroupIncludedGroupID);
+            if (groupIncludedID == null) groupIncludedID = device.get("deviceGroupIncludedGroupIDKey");
+            
+            String categoryStr = device.get(OmronConstants.OMRONBLEConfigDevice.Category);
+            if (categoryStr == null) categoryStr = device.get("category");
+            
+            if (groupID != null && groupIncludedID != null) {
+                HashMap<String, String> filterDevice = new HashMap<>();
+                filterDevice.put(OmronConstants.OMRONBLEConfigDevice.GroupID, groupID);
+                filterDevice.put(OmronConstants.OMRONBLEConfigDevice.GroupIncludedGroupID, groupIncludedID);
+                if (categoryStr != null) {
+                    filterDevice.put(OmronConstants.OMRONBLEConfigDevice.Category, categoryStr);
+                }
+                
+                List<HashMap<String, String>> filterDevices = new ArrayList<>();
+                filterDevices.add(filterDevice);
+                peripheralConfig.deviceFilters = filterDevices;
+                Log.d("OmronSharedMethods", "Clean deviceFilters: " + filterDevice.toString());
+            }
         }
 
         ArrayList<HashMap> deviceSettings = new ArrayList<>();
@@ -43,34 +60,46 @@ public class OmronSharedMethods {
         deviceSettings = getActivitySettings(deviceSettings);
 
         // BCM device settings (optional)
-        deviceSettings = getBCMSettings(deviceSettings);
+        deviceSettings = getBCMSettings(deviceSettings, isPairing);
 
 
-        deviceSettings = (ArrayList<HashMap>) getScanSettings(deviceSettings);
+        deviceSettings = (ArrayList<HashMap>) getScanSettings(deviceSettings, isPairing);
 
         peripheralConfig.deviceSettings = deviceSettings;
 
         // Set Scan timeout interval (optional)
         peripheralConfig.timeoutInterval = Constants.CONNECTION_TIMEOUT;
         // Set User Hash Id (mandatory)
-        peripheralConfig.userHashId = "<email_address_of_user>"; // Set logged in user email
+        peripheralConfig.userHashId = "user@example.com"; // Set logged in user email
 
         // Disclaimer: Read definition before usage
-        if (Integer.parseInt(device.get(OmronConstants.OMRONBLEConfigDevice.Category)) != OmronConstants.OMRONBLEDeviceCategory.ACTIVITY) {
+        if (getDeviceCategory() != OmronConstants.OMRONBLEDeviceCategory.ACTIVITY) {
             // Reads all data from device.
             peripheralConfig.enableAllDataRead = isHistoricDataRead;
         }
 
-        // Pass the last sequence number of reading  tracked by app - "SequenceKey" for each vital data
+        // Set sequenceNumbersForTransfer to -1 so scale streams all measurements without status 19 sequence disconnect
         HashMap<Integer, Integer> sequenceNumbersForTransfer = new HashMap<>();
-        sequenceNumbersForTransfer.put(1, 0);
-        sequenceNumbersForTransfer.put(2, 0);
+        sequenceNumbersForTransfer.put(1, -1);
+        sequenceNumbersForTransfer.put(2, -1);
+        sequenceNumbersForTransfer.put(3, -1);
+        sequenceNumbersForTransfer.put(4, -1);
         peripheralConfig.sequenceNumbersForTransfer = sequenceNumbersForTransfer;
-        
-        Log.d("OmronSharedMethods", "Configured sequenceNumbersForTransfer: {1:0, 2:0}");
+        Log.d("OmronSharedMethods", "Configured sequenceNumbersForTransfer: {1:-1, 2:-1, 3:-1, 4:-1}");
 
         // Set configuration for OmronPeripheralManager
         OmronPeripheralManager.sharedManager(context).setConfiguration(peripheralConfig);
+
+        // Stop any existing manager to clear stale BLE/GATT state from previous sessions.
+        // This simulates what force-stopping the app does (destroying the SDK singleton).
+        try {
+            OmronPeripheralManager.sharedManager(context).stopManager();
+            Log.d("startManager", "Stopped existing OmronPeripheralManager before restart");
+            Thread.sleep(1000); // Let BT stack fully release GATT resources
+        } catch (Exception e) {
+            Log.d("startManager", "No existing manager to stop: " + e.getMessage());
+        }
+
         Log.d("startManager", "Before Call startManager");
 
         //Initialize the connection process.
@@ -83,10 +112,22 @@ public class OmronSharedMethods {
     }
 
 
+    private static int getDeviceCategory() {
+        if (device == null) return OmronConstants.OMRONBLEDeviceCategory.BODYCOMPOSITION;
+        String catStr = device.get(OmronConstants.OMRONBLEConfigDevice.Category);
+        if (catStr == null) catStr = device.get("category");
+        if (catStr != null) {
+            try {
+                return Integer.parseInt(catStr);
+            } catch (Exception ignored) {}
+        }
+        return OmronConstants.OMRONBLEDeviceCategory.BODYCOMPOSITION;
+    }
+
     static ArrayList<HashMap> getBloodPressureSettings(ArrayList<HashMap> deviceSettings, boolean isPairing) {
 
         // Blood Pressure
-        if (Integer.parseInt(device.get(OmronConstants.OMRONBLEConfigDevice.Category)) == OmronConstants.OMRONBLEDeviceCategory.BLOODPRESSURE) {
+        if (getDeviceCategory() == OmronConstants.OMRONBLEDeviceCategory.BLOODPRESSURE) {
             HashMap<String, Object> bloodPressurePersonalSettings = new HashMap<>();
             bloodPressurePersonalSettings.put(OmronConstants.OMRONDevicePersonalSettings.BloodPressureTruReadEnableKey, OmronConstants.OMRONDevicePersonalSettingsBloodPressureTruReadStatus.On);
             bloodPressurePersonalSettings.put(OmronConstants.OMRONDevicePersonalSettings.BloodPressureTruReadIntervalKey, OmronConstants.OMRONDevicePersonalSettingsBloodPressureTruReadInterval.Interval30);
@@ -116,7 +157,7 @@ public class OmronSharedMethods {
     static ArrayList<HashMap> getActivitySettings(ArrayList<HashMap> deviceSettings) {
 
         // Activity Tracker
-        if (Integer.parseInt(device.get(OmronConstants.OMRONBLEConfigDevice.Category)) == OmronConstants.OMRONBLEDeviceCategory.ACTIVITY) {
+        if (getDeviceCategory() == OmronConstants.OMRONBLEDeviceCategory.ACTIVITY) {
 
             // Set Personal Settings in Configuration (mandatory for Activity devices)
             if (personalSettings != null) {
@@ -221,44 +262,82 @@ public class OmronSharedMethods {
         return deviceSettings;
     }
 
-    static ArrayList<HashMap> getBCMSettings(ArrayList<HashMap> deviceSettings) {
+    static ArrayList<HashMap> getBCMSettings(ArrayList<HashMap> deviceSettings, boolean isPairing) {
 
         // body composition
-        if (Integer.parseInt(device.get(OmronConstants.OMRONBLEConfigDevice.Category)) == OmronConstants.OMRONBLEDeviceCategory.BODYCOMPOSITION) {
+        if (getDeviceCategory() == OmronConstants.OMRONBLEDeviceCategory.BODYCOMPOSITION) {
 
             //Weight settings
             HashMap<String, Object> weightPersonalSettings = new HashMap<>();
-            weightPersonalSettings.put(OmronConstants.OMRONDevicePersonalSettings.WeightDCIKey, 100);
+            int userWeightDCI = 100; // Default DCI
+
+            // Use personal settings if available, otherwise fall back to defaults
+            String userHeight = "17000"; // Default: 170cm
+            int userGender = OmronConstants.OMRONDevicePersonalSettingsUserGenderType.Male;
+            String userDOB = "19001010"; // Default DOB
+
+            if (personalSettings != null) {
+                if (personalSettings.get("personalWeight") != null) {
+                    try {
+                        userWeightDCI = Integer.parseInt(personalSettings.get("personalWeight"));
+                        Log.d("OmronSharedMethods", "BCM using personalWeight DCI: " + userWeightDCI);
+                    } catch (Exception ignored) {}
+                }
+                if (personalSettings.get("personalHeight") != null) {
+                    userHeight = personalSettings.get("personalHeight");
+                    Log.d("OmronSharedMethods", "BCM using personalHeight: " + userHeight);
+                }
+                if (personalSettings.get("gender") != null) {
+                    String gender = personalSettings.get("gender");
+                    if ("female".equalsIgnoreCase(gender)) {
+                        userGender = OmronConstants.OMRONDevicePersonalSettingsUserGenderType.Female;
+                    }
+                    Log.d("OmronSharedMethods", "BCM using gender: " + gender + " -> " + userGender);
+                }
+                if (personalSettings.get("birthdayNum") != null) {
+                    userDOB = personalSettings.get("birthdayNum");
+                    Log.d("OmronSharedMethods", "BCM using birthdayNum: " + userDOB);
+                }
+            }
+
+            weightPersonalSettings.put(OmronConstants.OMRONDevicePersonalSettings.WeightDCIKey, userWeightDCI);
 
             HashMap<String, Object> settings = new HashMap<>();
-            settings.put(OmronConstants.OMRONDevicePersonalSettings.UserHeightKey, "17000");
-            settings.put(OmronConstants.OMRONDevicePersonalSettings.UserGenderKey, OmronConstants.OMRONDevicePersonalSettingsUserGenderType.Male);
-            settings.put(OmronConstants.OMRONDevicePersonalSettings.UserDateOfBirthKey, "19001010");
+            settings.put(OmronConstants.OMRONDevicePersonalSettings.UserHeightKey, userHeight);
+            settings.put(OmronConstants.OMRONDevicePersonalSettings.UserGenderKey, userGender);
+            settings.put(OmronConstants.OMRONDevicePersonalSettings.UserDateOfBirthKey, userDOB);
             settings.put(OmronConstants.OMRONDevicePersonalSettings.WeightKey, weightPersonalSettings);
 
-            HashMap<String, HashMap> personalSettings = new HashMap<>();
-            personalSettings.put(OmronConstants.OMRONDevicePersonalSettingsKey, settings);
+            HashMap<String, HashMap> bcmPersonalSettings = new HashMap<>();
+            bcmPersonalSettings.put(OmronConstants.OMRONDevicePersonalSettingsKey, settings);
 
             // Weight Settings
             // Add other weight common settings if any
             HashMap<String, Object> weightCommonSettings = new HashMap<>();
-            weightCommonSettings.put(OmronConstants.OMRONDeviceWeightSettings.UnitKey, OmronConstants.OMRONDeviceWeightUnit.Lbs);
+            weightCommonSettings.put(OmronConstants.OMRONDeviceWeightSettings.UnitKey, OmronConstants.OMRONDeviceWeightUnit.Kg);
             HashMap<String, Object> weightSettings = new HashMap<>();
             weightSettings.put(OmronConstants.OMRONDeviceWeightSettingsKey, weightCommonSettings);
 
-            deviceSettings.add(personalSettings);
+            deviceSettings.add(bcmPersonalSettings);
             deviceSettings.add(weightSettings);
         }
 
         return deviceSettings;
     }
 
-    private static ArrayList<HashMap> getScanSettings(ArrayList<HashMap> deviceSettings) {
+    private static ArrayList<HashMap> getScanSettings(ArrayList<HashMap> deviceSettings, boolean isPairing) {
+        // Check if ScanSettings has already been added
+        for (HashMap map : deviceSettings) {
+            if (map.containsKey(OmronConstants.OMRONDeviceScanSettingsKey)) {
+                return deviceSettings;
+            }
+        }
 
-        // Scan Settings
         HashMap<String, Object> ScanModeSettings = new HashMap<>();
         HashMap<String, HashMap> ScanSettings = new HashMap<>();
-        ScanModeSettings.put(OmronConstants.OMRONDeviceScanSettings.ModeKey, OmronConstants.OMRONDeviceScanSettingsMode.MismatchSequence);
+        int mode = isPairing ? OmronConstants.OMRONDeviceScanSettingsMode.Pairing
+                             : OmronConstants.OMRONDeviceScanSettingsMode.MismatchSequence;
+        ScanModeSettings.put(OmronConstants.OMRONDeviceScanSettings.ModeKey, mode);
         ScanSettings.put(OmronConstants.OMRONDeviceScanSettingsKey, ScanModeSettings);
 
         deviceSettings.add(ScanSettings);
