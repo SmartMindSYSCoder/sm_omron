@@ -104,11 +104,19 @@ public class ConnectDevice  {
                             if (OmronManager.personalSettings != null) {
                                 if (OmronManager.personalSettings.get("personalWeight") != null) {
                                     try {
-                                        userWeightDCI = Integer.parseInt(OmronManager.personalSettings.get("personalWeight"));
+                                        int parsed = Integer.parseInt(OmronManager.personalSettings.get("personalWeight"));
+                                        if (parsed > 0) {
+                                            userWeightDCI = parsed;
+                                        }
                                     } catch (Exception ignored) {}
                                 }
                                 if (OmronManager.personalSettings.get("personalHeight") != null) {
-                                    userHeight = OmronManager.personalSettings.get("personalHeight");
+                                    try {
+                                        int parsedHeight = Integer.parseInt(OmronManager.personalSettings.get("personalHeight"));
+                                        if (parsedHeight > 0) {
+                                            userHeight = OmronManager.personalSettings.get("personalHeight");
+                                        }
+                                    } catch (Exception ignored) {}
                                 }
                                 if (OmronManager.personalSettings.get("gender") != null) {
                                     String gender = OmronManager.personalSettings.get("gender");
@@ -117,7 +125,10 @@ public class ConnectDevice  {
                                     }
                                 }
                                 if (OmronManager.personalSettings.get("birthdayNum") != null) {
-                                    userDOB = OmronManager.personalSettings.get("birthdayNum");
+                                    String bday = OmronManager.personalSettings.get("birthdayNum");
+                                    if (bday != null && bday.length() == 8) {
+                                        userDOB = bday;
+                                    }
                                 }
                             }
 

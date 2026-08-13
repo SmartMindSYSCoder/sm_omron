@@ -279,12 +279,20 @@ public class OmronSharedMethods {
             if (personalSettings != null) {
                 if (personalSettings.get("personalWeight") != null) {
                     try {
-                        userWeightDCI = Integer.parseInt(personalSettings.get("personalWeight"));
+                        int parsed = Integer.parseInt(personalSettings.get("personalWeight"));
+                        if (parsed > 0) {
+                            userWeightDCI = parsed;
+                        }
                         Log.d("OmronSharedMethods", "BCM using personalWeight DCI: " + userWeightDCI);
                     } catch (Exception ignored) {}
                 }
                 if (personalSettings.get("personalHeight") != null) {
-                    userHeight = personalSettings.get("personalHeight");
+                    try {
+                        int parsedHeight = Integer.parseInt(personalSettings.get("personalHeight"));
+                        if (parsedHeight > 0) {
+                            userHeight = personalSettings.get("personalHeight");
+                        }
+                    } catch (Exception ignored) {}
                     Log.d("OmronSharedMethods", "BCM using personalHeight: " + userHeight);
                 }
                 if (personalSettings.get("gender") != null) {
@@ -295,7 +303,10 @@ public class OmronSharedMethods {
                     Log.d("OmronSharedMethods", "BCM using gender: " + gender + " -> " + userGender);
                 }
                 if (personalSettings.get("birthdayNum") != null) {
-                    userDOB = personalSettings.get("birthdayNum");
+                    String bday = personalSettings.get("birthdayNum");
+                    if (bday != null && bday.length() == 8) {
+                        userDOB = bday;
+                    }
                     Log.d("OmronSharedMethods", "BCM using birthdayNum: " + userDOB);
                 }
             }

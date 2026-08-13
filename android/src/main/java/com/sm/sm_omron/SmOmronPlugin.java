@@ -223,7 +223,13 @@ public class SmOmronPlugin implements FlutterPlugin, MethodCallHandler, Activity
             HashMap<String, String> personalSettingsMap = new HashMap<>();
             if (personalInfoMap.containsKey("heightCm")) {
                 double heightCm = ((Number) personalInfoMap.get("heightCm")).doubleValue();
-                personalSettingsMap.put("personalHeight", String.valueOf((int) (heightCm * 100)));
+                int heightValue = heightCm > 0 ? (int) (heightCm * 100) : 17000;
+                personalSettingsMap.put("personalHeight", String.valueOf(heightValue));
+            }
+            if (personalInfoMap.containsKey("weightKg")) {
+                double weightKg = ((Number) personalInfoMap.get("weightKg")).doubleValue();
+                int weightValue = weightKg > 0 ? (int) (weightKg * 10) : 600;
+                personalSettingsMap.put("personalWeight", String.valueOf(weightValue));
             }
             if (personalInfoMap.containsKey("gender")) {
                 personalSettingsMap.put("gender", (String) personalInfoMap.get("gender"));
@@ -303,19 +309,22 @@ public class SmOmronPlugin implements FlutterPlugin, MethodCallHandler, Activity
             // Height: Omron SDK expects height in cm * 100 (e.g., 170cm = "17000")
             if (personalInfoMap.containsKey("heightCm")) {
                 double heightCm = ((Number) personalInfoMap.get("heightCm")).doubleValue();
-                personalSettingsMap.put("personalHeight", String.valueOf((int) (heightCm * 100)));
+                int heightValue = heightCm > 0 ? (int) (heightCm * 100) : 17000;
+                personalSettingsMap.put("personalHeight", String.valueOf(heightValue));
             }
             
-            // Weight in kg
+            // Weight in kg (fallback to 60.0kg -> 600 DCI if <= 0 to prevent Omron Error 9000)
             if (personalInfoMap.containsKey("weightKg")) {
                 double weightKg = ((Number) personalInfoMap.get("weightKg")).doubleValue();
-                personalSettingsMap.put("personalWeight", String.valueOf((int) (weightKg * 10)));
+                int weightValue = weightKg > 0 ? (int) (weightKg * 10) : 600;
+                personalSettingsMap.put("personalWeight", String.valueOf(weightValue));
             }
             
             // Stride in cm
             if (personalInfoMap.containsKey("strideCm")) {
                 double strideCm = ((Number) personalInfoMap.get("strideCm")).doubleValue();
-                personalSettingsMap.put("personalStride", String.valueOf((int) (strideCm * 10)));
+                int strideValue = strideCm > 0 ? (int) (strideCm * 10) : 684;
+                personalSettingsMap.put("personalStride", String.valueOf(strideValue));
             }
             
             // Gender: "male" or "female"
