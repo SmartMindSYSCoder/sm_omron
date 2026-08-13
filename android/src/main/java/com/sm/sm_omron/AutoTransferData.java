@@ -47,16 +47,19 @@ public class AutoTransferData  {
     private int savedCategory = -1;
 
 
+    private boolean isHistoricDataRead = true;
+
     public AutoTransferData(MethodChannel.Result result, Context context) {
         this.result = result;
         this.applicationContext=context;
         Log.d("AutoTransferData", "Initialized AutoTransferData");
     }
 
-    void initializeFun(  String localName,String uuid ,int category, List<Integer> userIds ) {
-      Log.d("AutoTransferData", "initializeFun: localName=" + localName + ", uuid=" + uuid + ", category=" + category + ", userIds=" + userIds);
+    void initializeFun(String localName, String uuid, int category, List<Integer> userIds, boolean readHistoricalData) {
+      Log.d("AutoTransferData", "initializeFun: localName=" + localName + ", uuid=" + uuid + ", category=" + category + ", userIds=" + userIds + ", readHistoricalData=" + readHistoricalData);
       retryCount = 0;
       savedCategory = category;
+      this.isHistoricDataRead = readHistoricalData;
 
         if (OmronManager.mSelectedPeripheral != null && 
             uuid != null && 
@@ -80,6 +83,10 @@ public class AutoTransferData  {
         initManagerAndTransfer();
     }
 
+    void initializeFun(String localName, String uuid, int category, List<Integer> userIds) {
+        initializeFun(localName, uuid, category, userIds, true);
+    }
+
     /**
      * Initialize the OmronPeripheralManager and start data transfer.
      * This is also called on retries to re-establish SDK configuration.
@@ -88,8 +95,8 @@ public class AutoTransferData  {
         if (savedCategory == OmronConstants.OMRONBLEDeviceCategory.ACTIVITY || savedCategory == OmronConstants.OMRONBLEDeviceCategory.PULSEOXIMETER) {
             startOmronPeripheralManager(false, false, applicationContext);
         } else {
-            Log.d("category", "************************ category = " + savedCategory);
-            startOmronPeripheralManager(true, false, applicationContext);
+            Log.d("category", "************************ category = " + savedCategory + ", isHistoricDataRead = " + isHistoricDataRead);
+            startOmronPeripheralManager(true, isHistoricDataRead, applicationContext);
         }
         performDataTransfer();
     }
@@ -211,16 +218,7 @@ private  void  stopRecording(){
 }
 
     private int getTransferCategory() {
-        if (savedCategory == OmronConstants.OMRONBLEDeviceCategory.BLOODPRESSURE) {
-            return OmronConstants.OMRONVitalDataTransferCategory.BloodPressure;
-        } else if (savedCategory == OmronConstants.OMRONBLEDeviceCategory.BODYCOMPOSITION || savedCategory == OmronConstants.OMRONBLEDeviceCategory.WEIGHT) {
-            return OmronConstants.OMRONVitalDataTransferCategory.Weight;
-        } else if (savedCategory == OmronConstants.OMRONBLEDeviceCategory.ACTIVITY) {
-            return OmronConstants.OMRONVitalDataTransferCategory.Activity;
-        } else if (savedCategory == OmronConstants.OMRONBLEDeviceCategory.PULSEOXIMETER) {
-            return OmronConstants.OMRONVitalDataTransferCategory.PulseOximeter;
-        }
-        return OmronConstants.OMRONVitalDataTransferCategory.Weight;
+        return savedCategory;
     }
 
     // Single User data transfer

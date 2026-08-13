@@ -280,7 +280,7 @@ public class SmOmronPlugin implements FlutterPlugin, MethodCallHandler, Activity
 
         // Get transfer options
         Map<String, Object> options = (Map<String, Object>) map.get("options");
-        boolean readHistoricalData = false;
+        boolean readHistoricalData = true; // Default to true to enable reading all historical data stored on scale
         List<Integer> userIds = new ArrayList<>();
         userIds.add(1);
         int timeoutSeconds = 30;
@@ -400,7 +400,7 @@ public class SmOmronPlugin implements FlutterPlugin, MethodCallHandler, Activity
                             .collect(java.util.stream.Collectors.toList()));
                 }
             }
-        }.initializeFun(localName, uuid, category, finalUserIds);
+        }.initializeFun(localName, uuid, category, finalUserIds, finalReadHistoricalData);
     }
 
     private void handleTemperatureRecording(Result result) {
