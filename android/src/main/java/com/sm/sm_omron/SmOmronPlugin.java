@@ -341,15 +341,10 @@ public class SmOmronPlugin implements FlutterPlugin, MethodCallHandler, Activity
             Log.d(TAG, "Personal settings set: " + personalSettingsMap.toString());
         }
 
-        // Single user mode: fetch all user slots [1, 2, 3, 4] to capture readings regardless of scale weight auto-recognition, then normalize to User 1
-        if (singleUserMode || category == OmronConstants.OMRONBLEDeviceCategory.BODYCOMPOSITION) {
-            userIds = new ArrayList<>();
-            userIds.add(1);
-            userIds.add(2);
-            userIds.add(3);
-            userIds.add(4);
-            Log.d(TAG, "Single user mode: fetching all user slots [1,2,3,4] for body composition");
-        }
+        // Single user mode: fetch user slot [1] only
+        userIds = new ArrayList<>();
+        userIds.add(1);
+        Log.d(TAG, "Single user mode: fetching user slot [1]");
 
         // Check for temperature device (audio-based)
         if ("MC-280B-E".equals(uuid) || category == OmronConstants.OMRONBLEDeviceCategory.TEMPERATURE) {

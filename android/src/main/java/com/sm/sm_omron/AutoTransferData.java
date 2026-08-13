@@ -68,13 +68,9 @@ public class AutoTransferData  {
             mSelectedPeripheral = new OmronPeripheral(localName, uuid);
         }
 
-        // Clear to prevent accumulation across successive calls
+        // Enforce single user mode (User 1 only)
         selectedUsers.clear();
-        if (userIds != null && !userIds.isEmpty()) {
-            selectedUsers.addAll(userIds);
-        } else {
-            selectedUsers.add(1);
-        }
+        selectedUsers.add(1);
 
         if (mSelectedPeripheral.getUuid() == null || mSelectedPeripheral.getLocalName() == null) {
             Log.d("message", "Device Not Paired");
@@ -120,8 +116,7 @@ public class AutoTransferData  {
            if (selectedUsers.size() > 1) {
                transferUsersDataWithPeripheral(mSelectedPeripheral);
            } else {
-//               transferUserDataWithPeripheral(mSelectedPeripheral);
-               transferUsersDataWithPeripheral(mSelectedPeripheral);
+               transferUserDataWithPeripheral(mSelectedPeripheral);
            }
        }
 
@@ -215,11 +210,27 @@ private  void  stopRecording(){
     OmronPeripheralManager.sharedManager(applicationContext).stopRecording(null);
 }
 
+    private int getTransferCategory() {
+        if (savedCategory == OmronConstants.OMRONBLEDeviceCategory.BLOODPRESSURE) {
+            return OmronConstants.OMRONVitalDataTransferCategory.BloodPressure;
+        } else if (savedCategory == OmronConstants.OMRONBLEDeviceCategory.BODYCOMPOSITION || savedCategory == OmronConstants.OMRONBLEDeviceCategory.WEIGHT) {
+            return OmronConstants.OMRONVitalDataTransferCategory.Weight;
+        } else if (savedCategory == OmronConstants.OMRONBLEDeviceCategory.ACTIVITY) {
+            return OmronConstants.OMRONVitalDataTransferCategory.Activity;
+        } else if (savedCategory == OmronConstants.OMRONBLEDeviceCategory.PULSEOXIMETER) {
+            return OmronConstants.OMRONVitalDataTransferCategory.PulseOximeter;
+        }
+        return OmronConstants.OMRONVitalDataTransferCategory.Weight;
+    }
+
     // Single User data transfer
     private void transferUserDataWithPeripheral(OmronPeripheral peripheral) {
+        int category = getTransferCategory();
+        int userIndex = (selectedUsers != null && !selectedUsers.isEmpty()) ? selectedUsers.get(0) : 1;
+        Log.d("AutoTransferData", "startDataTransferFromPeripheral for single user: userIndex=" + userIndex + ", category=" + category);
 
         // Data Transfer from Device using OmronPeripheralManager
-        OmronPeripheralManager.sharedManager(applicationContext).startDataTransferFromPeripheral(peripheral, selectedUsers.get(0), true, OmronConstants.OMRONVitalDataTransferCategory.BloodPressure, new OmronPeripheralManagerDataTransferListener() {
+        OmronPeripheralManager.sharedManager(applicationContext).startDataTransferFromPeripheral(peripheral, userIndex, true, category, new OmronPeripheralManagerDataTransferListener() {
             @Override
             public void onDataTransferCompleted(OmronPeripheral peripheral, final OmronErrorInfo resultInfo) {
 
@@ -401,6 +412,16 @@ private  void  stopRecording(){
                     Log.e("AutoTransferData", "Users Data transfer failed. ResultCode: " + resultInfo.getResultCode() + 
                           ", Detail: " + resultInfo.getDetailInfo() + 
                           ", Message: " + resultInfo.getMessageInfo());
+
+                    // Fallback: If multi-user transfer returns ResultCode 9000 (uninitialized user slot 2, 3, or 4 on hardware),
+                    // retry data transfer specifically for User 1
+                    if (resultInfo.getResultCode() == 9000 && selectedUsers.size() > 1) {
+                        Log.d("AutoTransferData", "Multi-user transfer returned 9000 (uninitialized slots on scale). Retrying single-user transfer for User 1...");
+                        selectedUsers.clear();
+                        selectedUsers.add(1);
+                        transferUserDataWithPeripheral(peripheral);
+                        return;
+                    }
 
                     String detailStr = resultInfo.getDetailInfo();
                     boolean isRetryable = "6029".equals(detailStr) || "6030".equals(detailStr) || "6019".equals(detailStr);
