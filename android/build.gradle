@@ -33,7 +33,7 @@ android {
         namespace = "com.sm.sm_omron"
     }
 
-    compileSdk = 34
+    compileSdk = 36
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
